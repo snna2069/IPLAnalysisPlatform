@@ -1,0 +1,2 @@
+# Docker services are intentionally deferred until the orchestration phase.
+# Keep this file as the future home for local Airflow and supporting services.

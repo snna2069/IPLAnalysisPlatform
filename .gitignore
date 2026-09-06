@@ -1,1 +1,59 @@
+# Local environment variables and secrets.
 .env
+.env.*
+!.env.example
+
+# Python virtual environments, caches, and build artifacts.
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Airflow runtime files and local metadata.
+airflow/logs/*
+!airflow/logs/.gitkeep
+airflow/airflow.db
+airflow/airflow.cfg
+airflow/webserver_config.py
+
+# dbt artifacts and local profiles containing credentials.
+dbt_packages/
+target/
+logs/
+profiles.yml
+
+# Streamlit and tool caches.
+.streamlit/secrets.toml
+.streamlit/cache/
+
+# Terraform state, plans, and local plugin data.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+
+# Local data lake files are intentionally not committed.
+data/raw/*
+data/processed/*
+data/external/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+
+# OS and editor files.
+.DS_Store
+Thumbs.db
+.vscode/settings.json
