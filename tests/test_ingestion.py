@@ -1,4 +1,4 @@
-import json
+import zipfile
 
 import pandas as pd
 import pytest
@@ -61,3 +61,10 @@ def test_validate_file_reports_missing_and_empty_files(tmp_path):
     empty = tmp_path / "empty.csv"
     empty.touch()
     assert validate_file(empty) == ["file is empty"]
+
+
+def test_validate_file_accepts_nonempty_zip_sources(tmp_path):
+    path = tmp_path / "matches.zip"
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("match-1.json", b"{}")
+    assert validate_file(path) == []

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,10 @@ def _as_frame(path: Path) -> pd.DataFrame:
         value: Any = json.loads(path.read_text(encoding="utf-8"))
         records = value if isinstance(value, list) else value.get("data", value)
         return pd.json_normalize(records if isinstance(records, list) else [records])
+    if path.suffix.lower() == ".zip":
+        with zipfile.ZipFile(path) as archive:
+            names = [name for name in archive.namelist() if not name.endswith("/")]
+        return pd.DataFrame({"file_name": names})
     raise ValueError(f"Validation supports CSV and JSON files, not {path.suffix}")
 
 

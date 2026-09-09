@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the planned boundaries for the IPL Data Analysis platform. It is an architectural foundation only; the systems described below are not implemented in this phase.
+This document defines the boundaries for the IPL Data Analysis platform. Phase 1 ingestion and Phase 2 local Airflow orchestration are implemented; warehouse and analytics layers remain future phases.
 
 ## Data Flow
 
@@ -51,7 +51,7 @@ Local data is ignored by Git because it can be large, sensitive, or reproducible
 
 ### 4. Apache Airflow
 
-Airflow will coordinate ingestion, loading, transformation, and quality tasks. DAG definitions belong in `airflow/dags/`; plugins and runtime logs have separate directories to keep operational files distinct from source code.
+Airflow coordinates the Phase 1 ingestion and validation tasks through `airflow/dags/ipl_pipeline_dag.py`. The local Docker Compose stack mounts DAGs, plugins, logs, the Python source tree, and data lake directories. The DAG includes a warehouse handoff task so a future Snowflake load can be inserted without redesigning the upstream flow.
 
 ### 5. Snowflake
 
