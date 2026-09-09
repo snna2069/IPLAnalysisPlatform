@@ -4,7 +4,7 @@
 
 IPL Data Analysis is an end-to-end data engineering and analytics project for collecting, preparing, modeling, and presenting Indian Premier League data. The project is being built in phases so that each layer can be tested and understood independently.
 
-The current phase establishes the repository structure, local Python environment dependencies, configuration templates, and architectural documentation. No ingestion, orchestration, warehouse, transformation, quality, dashboard, or application implementation is included yet.
+Phase 1 implements configurable Python ingestion into the local raw data lake, metadata capture, and basic raw-file validation. Orchestration, warehouse, transformation, quality, dashboard, and application implementation remain future phases.
 
 ## Architecture
 
@@ -56,7 +56,7 @@ See [docs/architecture.md](docs/architecture.md) for the responsibilities and pl
 |-- airflow/          # Future DAGs, plugins, and local Airflow logs
 |-- data/             # Local data lake zones
 |-- docs/             # Architecture and project documentation
-|-- ingestion/        # Future source extraction code
+|-- ingestion/        # Configurable source extraction and raw-data validation
 |-- powerbi/          # Future Power BI assets and notes
 |-- quality/          # Future data quality checks
 |-- scripts/          # Developer and operational helper scripts
@@ -80,7 +80,17 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Copy `.env.example` to `.env` and replace the placeholder values only when a later phase requires Snowflake connectivity. The real `.env` file is ignored by Git.
+Copy `.env.example` to `.env`, then set `IPL_SOURCE_URLS` to a JSON object mapping dataset names such as `matches`, `deliveries`, `players`, and `teams` to CSV or JSON source URLs. Cricsheet's public IPL download is the documented source; additional datasets can be supplied by another compatible endpoint. The real `.env` file is ignored by Git.
+
+Run ingestion and validation from the project root:
+
+```powershell
+python -m ingestion.fetch_ipl_data
+python -m ingestion.validate_raw_data
+pytest
+```
+
+Downloaded bytes are preserved in `data/raw/`; `ingestion_metadata.json` records each source, UTC ingestion timestamp, file name, and record count. Required columns can be configured with the `IPL_REQUIRED_COLUMNS` JSON mapping.
 
 ## Future Phases
 
