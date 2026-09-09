@@ -1,0 +1,30 @@
+{{ config(materialized='table') }}
+
+select
+    delivery_id,
+    match_id,
+    innings_number,
+    over_number,
+    ball_number,
+    batting_team,
+    batter,
+    bowler,
+    non_striker,
+    batter_runs,
+    extra_runs,
+    total_runs,
+    wides,
+    no_balls,
+    byes,
+    leg_byes,
+    penalty_runs,
+    player_out,
+    dismissal_kind,
+    iff(batter_runs >= 4 and batter_runs < 6, 1, 0) as is_four,
+    iff(batter_runs = 6, 1, 0) as is_six,
+    iff(player_out is not null, 1, 0) as is_wicket,
+    iff(wides > 0 or no_balls > 0, 1, 0) as is_illegal_delivery,
+    source_file,
+    file_hash,
+    loaded_at
+from {{ ref('stg_deliveries') }}

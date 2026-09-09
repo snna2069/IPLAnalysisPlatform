@@ -31,6 +31,7 @@ dbt_packages/
 target/
 logs/
 profiles.yml
+!dbt/ipl_analytics/profiles.yml
 
 # Streamlit and tool caches.
 .streamlit/secrets.toml

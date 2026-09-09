@@ -35,6 +35,13 @@ services:
       IPL_SOURCE_URLS: '${IPL_SOURCE_URLS:-{"matches":"https://cricsheet.org/downloads/ipl_json.zip"}}'
       IPL_REQUIRED_COLUMNS: '${IPL_REQUIRED_COLUMNS:-{}}'
       IPL_AIRFLOW_SCHEDULE: '${IPL_AIRFLOW_SCHEDULE:-}'
+      SNOWFLAKE_ACCOUNT: '${SNOWFLAKE_ACCOUNT:-}'
+      SNOWFLAKE_USER: '${SNOWFLAKE_USER:-}'
+      SNOWFLAKE_PASSWORD: '${SNOWFLAKE_PASSWORD:-}'
+      SNOWFLAKE_ROLE: '${SNOWFLAKE_ROLE:-}'
+      SNOWFLAKE_WAREHOUSE: '${SNOWFLAKE_WAREHOUSE:-IPL_ANALYTICS_WH}'
+      SNOWFLAKE_DATABASE: '${SNOWFLAKE_DATABASE:-IPL_ANALYTICS}'
+      SNOWFLAKE_SCHEMA: '${SNOWFLAKE_SCHEMA:-RAW}'
     volumes: &airflow-volumes
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs

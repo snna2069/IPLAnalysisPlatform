@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: stg_matches
+    description: One cleaned row per source match.
+    columns:
+      - name: match_id
+        description: Stable source match identifier.
+        tests: [not_null, unique]
+      - name: season
+        description: IPL season represented as a string for source compatibility.
+        tests: [not_null]
+      - name: match_date
+        description: Match date parsed as a Snowflake DATE.
+      - name: venue
+        description: Standardized venue name.
+      - name: team_1
+        description: First team listed by the source.
+      - name: team_2
+        description: Second team listed by the source.
+  - name: stg_deliveries
+    description: One cleaned row per ball from match innings data.
+    columns:
+      - name: delivery_id
+        description: Deterministic match, innings, over, and ball identifier.
+        tests: [not_null, unique]
+      - name: match_id
+        tests: [not_null]
+      - name: batter
+        tests: [not_null]
+      - name: bowler
+        tests: [not_null]
+  - name: stg_players
+    description: Cleaned player records from the source player table.
+    columns:
+      - name: player_id
+        tests: [not_null, unique]
+      - name: player_name
+        tests: [not_null]
+  - name: stg_teams
+    description: Cleaned team records with standardized names.
+    columns:
+      - name: team_id
+        tests: [not_null, unique]
+      - name: team_name
+        tests: [not_null]
+
+  - name: int_match_deliveries
+    description: Delivery-level cricket calculations used by delivery facts.
+  - name: int_player_match_performance
+    description: Match-level batting and bowling aggregates by player.
+  - name: int_match_results
+    description: Match-level winner and margin calculations.
+
+  - name: dim_player
+    description: Analytics player dimension.
+  - name: dim_team
+    description: Analytics team dimension.
+  - name: dim_season
+    description: Analytics season dimension.
+  - name: dim_venue
+    description: Analytics venue dimension.
+  - name: dim_match
+    description: Analytics match dimension.
+  - name: fact_deliveries
+    description: Analytics fact table at ball grain.
+  - name: fact_matches
+    description: Analytics fact table at match grain.
+  - name: fact_player_performance
+    description: Analytics player performance fact table at match grain.

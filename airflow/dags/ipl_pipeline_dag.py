@@ -9,6 +9,7 @@ from airflow import DAG
 from airflow.exceptions import AirflowException
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
 from pendulum import datetime
 
 from ingestion.fetch_ipl_data import ingest
@@ -59,6 +60,17 @@ with DAG(
         doc="Load validated raw files once into Snowflake RAW tables.",
     )
 
+    dbt_run = BashOperator(
+        task_id="dbt_run",
+        bash_command=(
+            "cd /opt/airflow/project/dbt/ipl_analytics && "
+            "dbt deps --profiles-dir . && "
+            "dbt build --profiles-dir ."
+        ),
+        append_env=True,
+        doc="Build dbt staging, intermediate, and analytics models in Snowflake.",
+    )
+
     end = EmptyOperator(task_id="end")
 
-    start >> ingest_data >> validate_data_task >> load_to_snowflake_task >> end
+    start >> ingest_data >> validate_data_task >> load_to_snowflake_task >> dbt_run >> end

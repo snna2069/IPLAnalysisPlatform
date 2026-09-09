@@ -1,0 +1,26 @@
+name: ipl_analytics
+version: 1.0.0
+config-version: 2
+
+profile: ipl_analytics
+
+model-paths: [models]
+macro-paths: [macros]
+test-paths: [tests]
+seed-paths: [seeds]
+analysis-paths: [analyses]
+
+models:
+  ipl_analytics:
+    +persist_docs:
+      relation: true
+      columns: true
+    staging:
+      +materialized: view
+      +schema: STAGING
+    intermediate:
+      +materialized: table
+      +schema: INTERMEDIATE
+    marts:
+      +materialized: table
+      +schema: ANALYTICS

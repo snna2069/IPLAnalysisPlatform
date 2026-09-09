@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the boundaries for the IPL Data Analysis platform. Phase 1 ingestion, Phase 2 local Airflow orchestration, and Phase 3 Snowflake raw loading are implemented; analytics modeling remains a future phase.
+This document defines the boundaries for the IPL Data Analysis platform. Phase 1 ingestion, Phase 2 local Airflow orchestration, Phase 3 Snowflake raw loading, and Phase 4 dbt analytics modeling are implemented.
 
 ## Data Flow
 
@@ -59,7 +59,7 @@ Snowflake provides the warehouse landing zone. `IPL_ANALYTICS.RAW` contains sour
 
 ### 6. dbt
 
-The future dbt project will contain source definitions, staging models, dimensional or mart models, documentation, and tests. dbt build artifacts and local credential profiles are excluded from Git.
+The `dbt/ipl_analytics/` project contains source definitions, staging views, intermediate cricket calculations, dimensional models, fact models, documentation, and schema tests. `dbt build` runs after the Snowflake raw load in Airflow. dbt build artifacts and local credential profiles are excluded from Git.
 
 ### 7. Consumption
 

@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Immutable IPL records loaded by the Python ingestion layer.
+    database: IPL_ANALYTICS
+    schema: RAW
+    tables:
+      - name: raw_matches
+        description: Source match records stored as Snowflake VARIANT payloads.
+      - name: raw_deliveries
+        description: Source delivery records stored as Snowflake VARIANT payloads.
+      - name: raw_players
+        description: Source player records stored as Snowflake VARIANT payloads.
+      - name: raw_teams
+        description: Source team records stored as Snowflake VARIANT payloads.
