@@ -4,26 +4,29 @@ from __future__ import annotations
 
 import os
 from datetime import timedelta
-from pathlib import Path
 
 from airflow import DAG
+from airflow.exceptions import AirflowException
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from pendulum import datetime
 
 from ingestion.fetch_ipl_data import ingest
+from ingestion.load_to_snowflake import load_to_snowflake
 from ingestion.validate_raw_data import validate_raw_data
 
 
-def prepare_data_for_warehouse() -> None:
-    """Create the warehouse handoff directory without transforming raw data."""
-    processed_dir = Path(os.getenv("IPL_PROCESSED_DIR", "/opt/airflow/project/data/processed"))
-    processed_dir.mkdir(parents=True, exist_ok=True)
+def validate_data() -> None:
+    """Fail the DAG when any raw file does not pass validation."""
+    results = validate_raw_data()
+    errors = {path: file_errors for path, file_errors in results.items() if file_errors}
+    if errors:
+        raise AirflowException(f"Raw data validation failed: {errors}")
 
 
 with DAG(
     dag_id="ipl_pipeline",
-    description="Ingest and validate IPL data before the future warehouse load",
+    description="Ingest, validate, and load IPL data into Snowflake raw tables",
     start_date=datetime(2026, 1, 1, tz="UTC"),
     schedule=os.getenv("IPL_AIRFLOW_SCHEDULE") or None,
     catchup=False,
@@ -34,28 +37,28 @@ with DAG(
         "retries": 2,
         "retry_delay": timedelta(minutes=5),
     },
-    tags=["ipl", "phase-2", "local-data-lake"],
+    tags=["ipl", "phase-3", "snowflake", "raw"],
 ) as dag:
     start = EmptyOperator(task_id="start")
 
-    ingest_ipl_data = PythonOperator(
-        task_id="ingest_ipl_data",
+    ingest_data = PythonOperator(
+        task_id="ingest_data",
         python_callable=ingest,
         doc="Download configured IPL sources into data/raw and write ingestion metadata.",
     )
 
-    validate_raw_data_task = PythonOperator(
-        task_id="validate_raw_data",
-        python_callable=validate_raw_data,
+    validate_data_task = PythonOperator(
+        task_id="validate_data",
+        python_callable=validate_data,
         doc="Check raw files for presence, records, required columns, and duplicates.",
     )
 
-    prepare_data_for_warehouse_task = PythonOperator(
-        task_id="prepare_data_for_warehouse",
-        python_callable=prepare_data_for_warehouse,
-        doc="Prepare the local warehouse handoff boundary; no transformation is performed yet.",
+    load_to_snowflake_task = PythonOperator(
+        task_id="load_to_snowflake",
+        python_callable=load_to_snowflake,
+        doc="Load validated raw files once into Snowflake RAW tables.",
     )
 
     end = EmptyOperator(task_id="end")
 
-    start >> ingest_ipl_data >> validate_raw_data_task >> prepare_data_for_warehouse_task >> end
+    start >> ingest_data >> validate_data_task >> load_to_snowflake_task >> end

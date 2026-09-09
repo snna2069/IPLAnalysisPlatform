@@ -4,7 +4,7 @@
 
 IPL Data Analysis is an end-to-end data engineering and analytics project for collecting, preparing, modeling, and presenting Indian Premier League data. The project is being built in phases so that each layer can be tested and understood independently.
 
-Phase 1 implements configurable Python ingestion into the local raw data lake, metadata capture, and basic raw-file validation. Phase 2 adds local Apache Airflow orchestration. Warehouse loading, transformation, quality, dashboard, and application implementation remain future phases.
+Phase 1 implements configurable Python ingestion into the local raw data lake, metadata capture, and basic raw-file validation. Phase 2 adds local Apache Airflow orchestration. Phase 3 loads validated raw files into Snowflake. Transformations, quality, dashboard, and application implementation remain future phases.
 
 ## Architecture
 
@@ -43,7 +43,7 @@ See [docs/architecture.md](docs/architecture.md) for the responsibilities and pl
 - **Python:** ingestion utilities, local data processing, and future automation code
 - **Local data lake:** raw, external, and processed files under `data/`
 - **Apache Airflow:** local workflow scheduling and orchestration
-- **Snowflake:** future cloud data warehouse
+- **Snowflake:** raw data warehouse landing zone
 - **dbt:** future SQL transformations and data quality tests
 - **Power BI:** future business intelligence dashboard
 - **Streamlit:** optional future interactive analytics application
@@ -60,6 +60,7 @@ See [docs/architecture.md](docs/architecture.md) for the responsibilities and pl
 |-- powerbi/          # Future Power BI assets and notes
 |-- quality/          # Future data quality checks
 |-- scripts/          # Developer and operational helper scripts
+|-- snowflake/        # Snowflake DDL and setup documentation
 |-- streamlit_app/    # Optional future analytics application
 |-- terraform/        # Future infrastructure-as-code
 |-- tests/            # Automated tests
@@ -109,13 +110,21 @@ Use the task log link in the UI to view logs, or inspect the mounted `airflow/lo
 docker compose down
 ```
 
-The DAG runs `start`, `ingest_ipl_data`, `validate_raw_data`, `prepare_data_for_warehouse`, and `end` in order. The preparation task currently creates the processed-zone handoff directory only; a future Snowflake loading task can be inserted after it without changing ingestion or validation.
+The DAG runs `start`, `ingest_data`, `validate_data`, `load_to_snowflake`, and `end` in order. The Snowflake load is isolated after validation so future warehouse or dbt work can extend the flow without changing ingestion.
+
+## Snowflake Loading
+
+Run [snowflake/01_setup.sql](snowflake/01_setup.sql) in Snowflake before enabling the load task. Copy the Snowflake settings in `.env.example` into `.env` and replace the account, user, password, and role values. The loader reads validated files from `data/raw/`, stores records as `VARIANT` in `IPL_ANALYTICS.RAW`, and logs counts in `RAW.INGESTION_METADATA`.
+
+The Phase 3 DAG chain is `start → ingest_data → validate_data → load_to_snowflake → end`. `validate_data` fails the run when raw files are invalid. The Snowflake loader uses a SHA-256 file hash as its load key, so rerunning a DAG does not load the same file twice. Future Snowflake loading or dbt models should use the separate `ANALYTICS` schema rather than changing the raw tables.
+
+For trial accounts, use the XSMALL warehouse created by the setup script, keep `IPL_AIRFLOW_SCHEDULE` empty, and suspend the warehouse when testing is complete. The warehouse has auto-resume disabled and a 60-second auto-suspend setting. Load small fixtures first, run only when needed, and monitor credit usage in Snowsight. Detailed SQL and operating guidance are in [snowflake/README.md](snowflake/README.md).
 
 ## Future Phases
 
 1. Implement source ingestion and store immutable files in the raw data zone. (Complete)
 2. Add Airflow DAGs for scheduled ingestion and downstream dependencies. (Complete)
-3. Add Snowflake connection and loading workflows.
+3. Add Snowflake connection and loading workflows. (Complete)
 4. Initialize the dbt project with staging, intermediate, and mart models.
 5. Add dbt tests and broader data quality monitoring.
 6. Build the Power BI semantic model and dashboard.

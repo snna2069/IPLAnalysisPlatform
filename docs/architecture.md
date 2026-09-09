@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the boundaries for the IPL Data Analysis platform. Phase 1 ingestion and Phase 2 local Airflow orchestration are implemented; warehouse and analytics layers remain future phases.
+This document defines the boundaries for the IPL Data Analysis platform. Phase 1 ingestion, Phase 2 local Airflow orchestration, and Phase 3 Snowflake raw loading are implemented; analytics modeling remains a future phase.
 
 ## Data Flow
 
@@ -55,7 +55,7 @@ Airflow coordinates the Phase 1 ingestion and validation tasks through `airflow/
 
 ### 5. Snowflake
 
-Snowflake will provide the analytical warehouse. Credentials will be supplied through environment variables or a managed secret mechanism. The database and schema names are represented in `.env.example` but no connection code is included yet.
+Snowflake provides the warehouse landing zone. `IPL_ANALYTICS.RAW` contains source-shaped `VARIANT` records and an ingestion metadata ledger keyed by file hash. `IPL_ANALYTICS.ANALYTICS` is reserved for future modeled data. Credentials are supplied through environment variables or a managed secret mechanism; no credentials are stored in source code.
 
 ### 6. dbt
 

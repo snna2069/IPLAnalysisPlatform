@@ -2,11 +2,11 @@
 pandas>=2.2,<3.0
 requests>=2.31,<3.0
 python-dotenv>=1.0,<2.0
+snowflake-connector-python>=3.12,<4.0
 
 # Development and test tooling.
 pytest>=8.0,<10.0
 ruff>=0.8,<1.0
 black>=24.0,<26.0
 
-# Airflow, Snowflake, dbt, and Streamlit dependencies will be added in their
-# respective implementation phases rather than installed in this foundation.
+# dbt and Streamlit dependencies will be added in their respective phases.
