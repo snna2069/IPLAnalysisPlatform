@@ -27,7 +27,7 @@ def validate_data() -> None:
 
 with DAG(
     dag_id="ipl_pipeline",
-    description="Ingest, validate, and load IPL data into Snowflake raw tables",
+    description="Ingest, validate, transform, and quality-check IPL data",
     start_date=datetime(2026, 1, 1, tz="UTC"),
     schedule=os.getenv("IPL_AIRFLOW_SCHEDULE") or None,
     catchup=False,
@@ -65,12 +65,23 @@ with DAG(
         bash_command=(
             "cd /opt/airflow/project/dbt/ipl_analytics && "
             "dbt deps --profiles-dir . && "
-            "dbt build --profiles-dir ."
+            "dbt run --profiles-dir ."
         ),
         append_env=True,
         doc="Build dbt staging, intermediate, and analytics models in Snowflake.",
     )
 
-    end = EmptyOperator(task_id="end")
+    dbt_test = BashOperator(
+        task_id="dbt_test",
+        bash_command=(
+            "cd /opt/airflow/project/dbt/ipl_analytics && "
+            "dbt source freshness --profiles-dir . && "
+            "dbt test --profiles-dir . --store-failures"
+        ),
+        append_env=True,
+        doc="Run schema, relationship, freshness, and IPL business-rule tests.",
+    )
 
-    start >> ingest_data >> validate_data_task >> load_to_snowflake_task >> dbt_run >> end
+    pipeline_success = EmptyOperator(task_id="pipeline_success")
+
+    start >> ingest_data >> validate_data_task >> load_to_snowflake_task >> dbt_run >> dbt_test >> pipeline_success

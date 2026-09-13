@@ -4,7 +4,7 @@
 
 IPL Data Analysis is an end-to-end data engineering and analytics project for collecting, preparing, modeling, and presenting Indian Premier League data. The project is being built in phases so that each layer can be tested and understood independently.
 
-Phase 1 implements configurable Python ingestion into the local raw data lake, metadata capture, and basic raw-file validation. Phase 2 adds local Apache Airflow orchestration. Phase 3 loads validated raw files into Snowflake. Phase 4 transforms Snowflake raw data with dbt Core into analytics-ready models. Quality, dashboard, and application implementation remain future phases.
+Phase 1 implements configurable Python ingestion into the local raw data lake, metadata capture, and basic raw-file validation. Phase 2 adds local Apache Airflow orchestration. Phase 3 loads validated raw files into Snowflake. Phase 4 transforms Snowflake raw data with dbt Core into analytics-ready models. Phase 5 adds dbt schema, relationship, freshness, and IPL business-rule tests.
 
 ## Architecture
 
@@ -117,7 +117,7 @@ The DAG runs `start`, `ingest_data`, `validate_data`, `load_to_snowflake`, and `
 
 Run [snowflake/01_setup.sql](snowflake/01_setup.sql) in Snowflake before enabling the load task. Copy the Snowflake settings in `.env.example` into `.env` and replace the account, user, password, and role values. The loader reads validated files from `data/raw/`, stores records as `VARIANT` in `IPL_ANALYTICS.RAW`, and logs counts in `RAW.INGESTION_METADATA`.
 
-The Phase 3 and 4 DAG chain is `start → ingest_data → validate_data → load_to_snowflake → dbt_run → end`. `validate_data` fails the run when raw files are invalid. The Snowflake loader uses a SHA-256 file hash as its load key, so rerunning a DAG does not load the same file twice. dbt models use separate `STAGING`, `INTERMEDIATE`, and `ANALYTICS` schemas rather than changing the raw tables.
+The Phase 3-5 DAG chain is `start → ingest_data → validate_data → load_to_snowflake → dbt_run → dbt_test → pipeline_success`. `validate_data` and `dbt_test` fail their tasks when quality checks fail. The Snowflake loader uses a SHA-256 file hash as its load key, so rerunning a DAG does not load the same file twice. dbt models use separate `STAGING`, `INTERMEDIATE`, and `ANALYTICS` schemas rather than changing the raw tables.
 
 For trial accounts, use the XSMALL warehouse created by the setup script, keep `IPL_AIRFLOW_SCHEDULE` empty, and suspend the warehouse when testing is complete. The warehouse has auto-resume disabled and a 60-second auto-suspend setting. Load small fixtures first, run only when needed, and monitor credit usage in Snowsight. Detailed SQL and operating guidance are in [snowflake/README.md](snowflake/README.md).
 
@@ -127,7 +127,7 @@ For trial accounts, use the XSMALL warehouse created by the setup script, keep `
 2. Add Airflow DAGs for scheduled ingestion and downstream dependencies. (Complete)
 3. Add Snowflake connection and loading workflows. (Complete)
 4. Initialize the dbt project with staging, intermediate, and mart models. (Complete)
-5. Add dbt tests and broader data quality monitoring.
+5. Add dbt tests and broader data quality monitoring. (Complete)
 6. Build the Power BI semantic model and dashboard.
 7. Add the optional Streamlit analytics experience.
 8. Add Terraform after the application architecture and cloud resources are stable.

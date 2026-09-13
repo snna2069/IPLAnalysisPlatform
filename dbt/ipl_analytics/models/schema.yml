@@ -10,6 +10,13 @@ models:
       - name: season
         description: IPL season represented as a string for source compatibility.
         tests: [not_null]
+      - name: toss_decision
+        description: Decision made by the toss winner.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['bat', 'field']
+                quote: true
       - name: match_date
         description: Match date parsed as a Snowflake DATE.
       - name: venue
@@ -25,7 +32,12 @@ models:
         description: Deterministic match, innings, over, and ball identifier.
         tests: [not_null, unique]
       - name: match_id
-        tests: [not_null]
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_matches')
+                field: match_id
       - name: batter
         tests: [not_null]
       - name: bowler
@@ -47,6 +59,27 @@ models:
 
   - name: int_match_deliveries
     description: Delivery-level cricket calculations used by delivery facts.
+    columns:
+      - name: delivery_id
+        tests: [not_null, unique]
+      - name: batter_runs
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: total_runs
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= batter_runs"
+      - name: match_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_match')
+                field: match_id
   - name: int_player_match_performance
     description: Match-level batting and bowling aggregates by player.
   - name: int_match_results
@@ -54,17 +87,143 @@ models:
 
   - name: dim_player
     description: Analytics player dimension.
+    columns:
+      - name: player_key
+        tests: [not_null, unique]
+      - name: player_id
+        tests: [not_null, unique]
+      - name: player_name
+        tests: [not_null]
   - name: dim_team
     description: Analytics team dimension.
+    columns:
+      - name: team_key
+        tests: [not_null, unique]
+      - name: team_id
+        tests: [not_null, unique]
+      - name: team_name
+        tests: [not_null]
   - name: dim_season
     description: Analytics season dimension.
+    columns:
+      - name: season_key
+        tests: [not_null, unique]
+      - name: season
+        tests: [not_null, unique]
   - name: dim_venue
     description: Analytics venue dimension.
+    columns:
+      - name: venue_key
+        tests: [not_null, unique]
+      - name: venue
+        tests: [not_null, unique]
   - name: dim_match
     description: Analytics match dimension.
+    columns:
+      - name: match_key
+        tests: [not_null, unique]
+      - name: match_id
+        tests: [not_null, unique]
+      - name: season_key
+        description: Foreign key to dim_season.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_season')
+                field: season_key
+      - name: venue_key
+        description: Foreign key to dim_venue.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_venue')
+                field: venue_key
   - name: fact_deliveries
     description: Analytics fact table at ball grain.
+    columns:
+      - name: delivery_key
+        tests: [not_null, unique]
+      - name: match_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_match')
+                field: match_key
+      - name: batter_runs
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: total_runs
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= batter_runs"
   - name: fact_matches
     description: Analytics fact table at match grain.
+    columns:
+      - name: match_key
+        tests: [not_null, unique]
+      - name: season_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_season')
+                field: season_key
+      - name: venue_key
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_venue')
+                field: venue_key
+      - name: team_1_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_team')
+                field: team_key
+      - name: team_2_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_team')
+                field: team_key
   - name: fact_player_performance
     description: Analytics player performance fact table at match grain.
+    columns:
+      - name: performance_key
+        tests: [not_null, unique]
+      - name: match_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_match')
+                field: match_key
+      - name: player_key
+        description: Deterministic player reference generated from player name.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_player')
+                field: player_key
+      - name: runs_scored
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: wickets
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
