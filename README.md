@@ -121,6 +121,18 @@ The Phase 3-5 DAG chain is `start → ingest_data → validate_data → load_to_
 
 For trial accounts, use the XSMALL warehouse created by the setup script, keep `IPL_AIRFLOW_SCHEDULE` empty, and suspend the warehouse when testing is complete. The warehouse has auto-resume disabled and a 60-second auto-suspend setting. Load small fixtures first, run only when needed, and monitor credit usage in Snowsight. Detailed SQL and operating guidance are in [snowflake/README.md](snowflake/README.md).
 
+## Streamlit Analytics App
+
+The Phase 7 frontend reads only the dbt-generated Snowflake analytics marts. Install its isolated dependencies and configure credentials through environment variables or Streamlit secrets:
+
+```powershell
+python -m pip install -r streamlit_app/requirements.txt
+Copy-Item .streamlit/secrets.toml.example .streamlit/secrets.toml
+streamlit run streamlit_app/Home.py
+```
+
+Replace the example secret values before launching. The app opens at [http://localhost:8501](http://localhost:8501), caches Snowflake connections and read-only query results, and stops with a clear configuration error when credentials or permissions are missing. It uses the same `IPL_ANALYTICS.ANALYTICS` star schema described in [powerbi/dashboard_design.md](powerbi/dashboard_design.md).
+
 ## Future Phases
 
 1. Implement source ingestion and store immutable files in the raw data zone. (Complete)
