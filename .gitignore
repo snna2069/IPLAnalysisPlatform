@@ -41,6 +41,8 @@ profiles.yml
 .terraform/
 *.tfstate
 *.tfstate.*
+terraform/terraform.tfvars
+terraform/*.tfplan
 *.tfvars
 *.tfvars.json
 crash.log

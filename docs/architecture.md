@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the boundaries for the IPL Data Analysis platform. Phase 1 ingestion, Phase 2 local Airflow orchestration, Phase 3 Snowflake raw loading, Phase 4 dbt analytics modeling, and Phase 5 dbt quality checks are implemented.
+This document defines the boundaries for the IPL Data Analysis platform. Phases 1-5 implement ingestion, orchestration, Snowflake loading, dbt analytics modeling, and dbt quality checks. Phase 6 documents Power BI consumption, Phase 7 provides Streamlit consumption, and Phase 8 adds optional Terraform infrastructure.
 
 ## Data Flow
 
@@ -67,7 +67,7 @@ Power BI will provide the primary dashboard experience. Streamlit is an optional
 
 ### 8. Terraform
 
-Terraform will be introduced after the data and application boundaries stabilize. State files, variable files, plans, and provider caches are already excluded from Git so infrastructure work can be added without changing repository hygiene.
+Terraform provides an optional, disabled-by-default AWS S3 data-lake module. Local filesystem storage remains the development default. State files, variable files, plans, and provider caches are excluded from Git; remote encrypted state and additional cloud resources can be added later without changing application code.
 
 ## Configuration Principles
 

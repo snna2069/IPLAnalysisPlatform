@@ -1,0 +1,11 @@
+# Safe development defaults: no cloud resources are created.
+aws_region           = "us-east-1"
+project_name         = "ipl-analytics"
+environment          = "dev"
+enable_s3_data_lake  = false
+s3_bucket_name      = ""
+s3_force_destroy     = false
+
+# To opt into the optional S3 bucket, use a globally unique name:
+# enable_s3_data_lake = true
+# s3_bucket_name      = "your-globally-unique-ipl-data-lake"

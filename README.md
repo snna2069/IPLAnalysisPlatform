@@ -4,7 +4,7 @@
 
 IPL Data Analysis is an end-to-end data engineering and analytics project for collecting, preparing, modeling, and presenting Indian Premier League data. The project is being built in phases so that each layer can be tested and understood independently.
 
-Phase 1 implements configurable Python ingestion into the local raw data lake, metadata capture, and basic raw-file validation. Phase 2 adds local Apache Airflow orchestration. Phase 3 loads validated raw files into Snowflake. Phase 4 transforms Snowflake raw data with dbt Core into analytics-ready models. Phase 5 adds dbt schema, relationship, freshness, and IPL business-rule tests.
+Phase 1 implements configurable Python ingestion into the local raw data lake, metadata capture, and basic raw-file validation. Phase 2 adds local Apache Airflow orchestration. Phase 3 loads validated raw files into Snowflake. Phase 4 transforms Snowflake raw data with dbt Core into analytics-ready models. Phase 5 adds dbt schema, relationship, freshness, and IPL business-rule tests. Phase 6 documents Power BI consumption, Phase 7 provides a Streamlit frontend, and Phase 8 adds safe, optional Terraform infrastructure.
 
 ## Architecture
 
@@ -47,7 +47,7 @@ See [docs/architecture.md](docs/architecture.md) for the responsibilities and pl
 - **dbt:** future SQL transformations and data quality tests
 - **Power BI:** future business intelligence dashboard
 - **Streamlit:** optional future interactive analytics application
-- **Terraform:** future infrastructure-as-code layer
+- **Terraform:** optional infrastructure-as-code for future cloud extension
 
 ## Repository Structure
 
@@ -63,7 +63,7 @@ See [docs/architecture.md](docs/architecture.md) for the responsibilities and pl
 |-- snowflake/        # Snowflake DDL and setup documentation
 |-- dbt/              # dbt Core project and Snowflake analytics models
 |-- streamlit_app/    # Optional future analytics application
-|-- terraform/        # Future infrastructure-as-code
+|-- terraform/        # Optional Terraform infrastructure module
 |-- tests/            # Automated tests
 |-- transformations/  # Future dbt project
 |-- .env.example      # Safe configuration template
@@ -133,6 +133,10 @@ streamlit run streamlit_app/Home.py
 
 Replace the example secret values before launching. The app opens at [http://localhost:8501](http://localhost:8501), caches Snowflake connections and read-only query results, and stops with a clear configuration error when credentials or permissions are missing. It uses the same `IPL_ANALYTICS.ANALYTICS` star schema described in [powerbi/dashboard_design.md](powerbi/dashboard_design.md).
 
+## Terraform Infrastructure
+
+Phase 8 is documented in [terraform/README.md](terraform/README.md). The default Terraform configuration provisions no cloud resources and keeps the local filesystem data lake as the development default. An optional private S3 data-lake bucket can be enabled explicitly with `enable_s3_data_lake = true`; review costs and the plan before applying.
+
 ## Future Phases
 
 1. Implement source ingestion and store immutable files in the raw data zone. (Complete)
@@ -140,6 +144,6 @@ Replace the example secret values before launching. The app opens at [http://loc
 3. Add Snowflake connection and loading workflows. (Complete)
 4. Initialize the dbt project with staging, intermediate, and mart models. (Complete)
 5. Add dbt tests and broader data quality monitoring. (Complete)
-6. Build the Power BI semantic model and dashboard.
-7. Add the optional Streamlit analytics experience.
-8. Add Terraform after the application architecture and cloud resources are stable.
+6. Build the Power BI semantic model and dashboard. (Complete)
+7. Add the optional Streamlit analytics experience. (Complete)
+8. Add Terraform after the application architecture and cloud resources are stable. (Complete)
