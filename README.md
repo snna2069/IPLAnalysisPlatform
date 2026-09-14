@@ -9,31 +9,31 @@ Phase 1 implements configurable Python ingestion into the local raw data lake, m
 ## Architecture
 
 ```text
-IPL Data Sources
+IPL Data Source
         |
         v
-Python Data Ingestion
-        |
-        v
-Local Data Lake
-        |
-        v
-Apache Airflow Orchestration
-        |
-        v
-Snowflake Data Warehouse
-        |
-        v
-dbt Transformations
-        |
-        v
-dbt Data Quality Tests
-        |
-        v
-Power BI Dashboard
-        |
-        v
-Optional Streamlit Analytics Application
+Python Ingestion -> Local Data Lake -> Raw Validation
+                                             |
+                                             v
+                                      Apache Airflow
+                                             |
+                                             v
+                                      Snowflake RAW
+                                             |
+                                             v
+                                      dbt STAGING
+                                             |
+                                             v
+                                   dbt INTERMEDIATE
+                                             |
+                                             v
+                                   dbt ANALYTICS MARTS
+                                             |
+                                             v
+                                      dbt DATA TESTS
+                                        /       \\
+                                       v         v
+                              Power BI       Streamlit
 ```
 
 See [docs/architecture.md](docs/architecture.md) for the responsibilities and planned boundaries of each layer.
@@ -44,9 +44,9 @@ See [docs/architecture.md](docs/architecture.md) for the responsibilities and pl
 - **Local data lake:** raw, external, and processed files under `data/`
 - **Apache Airflow:** local workflow scheduling and orchestration
 - **Snowflake:** raw data warehouse landing zone
-- **dbt:** future SQL transformations and data quality tests
-- **Power BI:** future business intelligence dashboard
-- **Streamlit:** optional future interactive analytics application
+- **dbt Core:** Snowflake staging, intermediate models, analytics marts, and tests
+- **Power BI:** documented portfolio dashboard consuming analytics marts
+- **Streamlit:** interactive frontend consuming analytics marts
 - **Terraform:** optional infrastructure-as-code for future cloud extension
 
 ## Repository Structure
@@ -111,7 +111,7 @@ Use the task log link in the UI to view logs, or inspect the mounted `airflow/lo
 docker compose down
 ```
 
-The DAG runs `start`, `ingest_data`, `validate_data`, `load_to_snowflake`, and `end` in order. The Snowflake load is isolated after validation so future warehouse or dbt work can extend the flow without changing ingestion.
+The DAG runs `start`, `ingest_data`, `validate_data`, `load_to_snowflake`, `dbt_run`, `dbt_test`, and `pipeline_success` in order. Any failure stops downstream work and is visible in the Airflow task logs.
 
 ## Snowflake Loading
 
@@ -120,6 +120,56 @@ Run [snowflake/01_setup.sql](snowflake/01_setup.sql) in Snowflake before enablin
 The Phase 3-5 DAG chain is `start → ingest_data → validate_data → load_to_snowflake → dbt_run → dbt_test → pipeline_success`. `validate_data` and `dbt_test` fail their tasks when quality checks fail. The Snowflake loader uses a SHA-256 file hash as its load key, so rerunning a DAG does not load the same file twice. dbt models use separate `STAGING`, `INTERMEDIATE`, and `ANALYTICS` schemas rather than changing the raw tables.
 
 For trial accounts, use the XSMALL warehouse created by the setup script, keep `IPL_AIRFLOW_SCHEDULE` empty, and suspend the warehouse when testing is complete. The warehouse has auto-resume disabled and a 60-second auto-suspend setting. Load small fixtures first, run only when needed, and monitor credit usage in Snowsight. Detailed SQL and operating guidance are in [snowflake/README.md](snowflake/README.md).
+
+## dbt Setup
+
+The dbt project is in [dbt/ipl_analytics](dbt/ipl_analytics). It reads `IPL_ANALYTICS.RAW`, creates `STAGING`, `INTERMEDIATE`, and `ANALYTICS` schemas, and exposes the star-schema marts consumed by Power BI and Streamlit.
+
+```powershell
+python -m pip install -r requirements.txt
+Set-Location dbt/ipl_analytics
+dbt deps
+dbt debug --profiles-dir .
+dbt run --profiles-dir .
+dbt source freshness --profiles-dir .
+dbt test --profiles-dir . --store-failures
+Set-Location ../..
+```
+
+The dbt profile reads Snowflake credentials from environment variables. Never place credentials in `profiles.yml`, `terraform.tfvars`, a PBIX file, or committed Streamlit secrets.
+
+## Power BI Setup
+
+Follow [powerbi/dashboard_design.md](powerbi/dashboard_design.md) to connect Power BI to the `IPL_ANALYTICS.ANALYTICS` schema with the native Snowflake connector. Use a least-privilege reporting role and load only the dbt dimensions and facts. Power BI owns relationships, measures, filters, and presentation; JSON parsing, standardization, grain, and business transformations remain in dbt.
+
+## End-to-End Pipeline
+
+After Snowflake has been initialized and `.env` contains valid source/Snowflake settings, run the complete orchestration locally:
+
+```powershell
+docker compose up airflow-init
+docker compose up -d airflow-webserver airflow-scheduler
+```
+
+Open `http://localhost:8080`, sign in with the Airflow admin settings, unpause `ipl_pipeline`, and trigger it manually. The DAG executes:
+
+```text
+IPL source -> ingest_data -> validate_data -> load_to_snowflake
+           -> dbt_run -> dbt_test -> pipeline_success
+           -> Power BI / Streamlit analytics consumers
+```
+
+Monitor task logs in the Airflow UI or under `airflow/logs/`. A failed validation, Snowflake load, dbt run, source freshness check, or dbt test stops the chain and prevents `pipeline_success`. Stop local services with `docker compose down`.
+
+## Screenshots
+
+Add portfolio screenshots after loading a representative dataset:
+
+- `[Screenshot: Airflow graph showing the successful end-to-end DAG]`
+- `[Screenshot: Snowflake RAW, STAGING, and ANALYTICS schemas]`
+- `[Screenshot: dbt docs or test results showing model lineage and quality checks]`
+- `[Screenshot: Power BI Executive Overview]`
+- `[Screenshot: Streamlit Team Analysis page]`
 
 ## Streamlit Analytics App
 
@@ -147,3 +197,12 @@ Phase 8 is documented in [terraform/README.md](terraform/README.md). The default
 6. Build the Power BI semantic model and dashboard. (Complete)
 7. Add the optional Streamlit analytics experience. (Complete)
 8. Add Terraform after the application architecture and cloud resources are stable. (Complete)
+
+## Future Improvements
+
+- Add a dbt-owned match-team bridge for cleaner team win and head-to-head filtering.
+- Add official tournament champion metadata instead of inferring champions from match winners.
+- Add CI checks for Python, dbt parse, Terraform validation, and DAG import.
+- Add remote Terraform state with encryption and locking for a shared deployment.
+- Add observability metrics for source freshness, row counts, and pipeline duration.
+- Add role-based Snowflake access and scheduled refresh orchestration for production consumers.

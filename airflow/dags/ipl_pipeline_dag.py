@@ -1,4 +1,4 @@
-"""Airflow orchestration for the local IPL ingestion pipeline."""
+"""Airflow orchestration for the complete IPL analytics pipeline."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ with DAG(
         "retries": 2,
         "retry_delay": timedelta(minutes=5),
     },
-    tags=["ipl", "phase-3", "snowflake", "raw"],
+    tags=["ipl", "phase-9", "snowflake", "dbt", "quality"],
 ) as dag:
     start = EmptyOperator(task_id="start")
 

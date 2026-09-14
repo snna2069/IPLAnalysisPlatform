@@ -10,39 +10,57 @@ app_css()
 filters = sidebar_filters(safe_options())
 show_header("SEASON ANALYSIS", "The story changes every year.", "Follow champions, leading performers, and the rhythm of runs and wickets across IPL history.")
 
+match_conditions = ["1=1"]
+match_params: list[str] = []
+if filters["season"] != "All":
+    match_conditions.append("m.season = %s")
+    match_params.append(filters["season"])
+if filters["team"] != "All":
+    match_conditions.append("(m.team_1 = %s or m.team_2 = %s)")
+    match_params.extend([filters["team"], filters["team"]])
+if filters["venue"] != "All":
+    match_conditions.append("m.venue = %s")
+    match_params.append(filters["venue"])
+if filters["player"] != "All":
+    match_conditions.append("exists (select 1 from IPL_ANALYTICS.ANALYTICS.FACT_PLAYER_PERFORMANCE fp where fp.match_key = m.match_key and fp.player_name = %s)")
+    match_params.append(filters["player"])
+match_where = " and ".join(match_conditions)
+
 try:
     trends = query(
-        """
+        f"""
         select m.season, count(distinct m.match_key) as matches,
                sum(d.total_runs) as runs, sum(d.is_wicket) as wickets
         from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES m
         left join IPL_ANALYTICS.ANALYTICS.FACT_DELIVERIES d using (match_key)
+        where {match_where}
         group by m.season order by try_to_number(m.season)
-        """
+        """,
+        tuple(match_params),
     )
     champions = query(
-        """
+        f"""
         select season, winner as champion, count(*) as title_evidence
-        from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES
+        from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES m
         where winner is not null
+          and {match_where}
         group by season, winner
         qualify row_number() over (partition by season order by title_evidence desc) = 1
         order by try_to_number(season) desc
-        """
+        """,
+        tuple(match_params),
     )
     performers = query(
-        """
+        f"""
         select m.season, p.player_name,
                sum(p.runs_scored) as runs, sum(p.wickets) as wickets
         from IPL_ANALYTICS.ANALYTICS.FACT_PLAYER_PERFORMANCE p
         join IPL_ANALYTICS.ANALYTICS.DIM_MATCH m using (match_key)
+        where {match_where}
         group by m.season, p.player_name
-        """
+        """,
+        tuple(match_params),
     )
-    if filters["season"] != "All":
-        trends = trends[trends["SEASON"].astype(str) == filters["season"]]
-        champions = champions[champions["SEASON"].astype(str) == filters["season"]]
-        performers = performers[performers["SEASON"].astype(str) == filters["season"]]
     if trends.empty:
         st.info("No season data matches the selected filter.")
     else:

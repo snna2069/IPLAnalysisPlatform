@@ -11,6 +11,7 @@ filters = sidebar_filters(safe_options())
 show_header("TEAM ANALYSIS", "Dynasties, rivalries, momentum.", "Compare team outcomes across the seasons and find the matchups that shaped the league.")
 
 season = filters["season"]
+team = filters["team"]
 venue = filters["venue"]
 params = []
 conditions = ["1=1"]
@@ -20,6 +21,9 @@ if season != "All":
 if venue != "All":
     conditions.append("m.venue = %s")
     params.append(venue)
+if team != "All":
+    conditions.append("(m.team_1 = %s or m.team_2 = %s)")
+    params.extend([team, team])
 where = " AND ".join(conditions)
 
 try:

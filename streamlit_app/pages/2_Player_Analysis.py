@@ -18,6 +18,12 @@ if filters["season"] != "All":
 if filters["player"] != "All":
     conditions.append("p.player_name = %s")
     params.append(filters["player"])
+if filters["team"] != "All":
+    conditions.append("(m.team_1 = %s or m.team_2 = %s)")
+    params.extend([filters["team"], filters["team"]])
+if filters["venue"] != "All":
+    conditions.append("m.venue = %s")
+    params.append(filters["venue"])
 where = " AND ".join(conditions)
 
 try:

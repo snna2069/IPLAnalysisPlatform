@@ -18,6 +18,12 @@ if filters["season"] != "All":
 if filters["venue"] != "All":
     conditions.append("VENUE = %s")
     params.append(filters["venue"])
+if filters["team"] != "All":
+    conditions.append("(TEAM_1 = %s or TEAM_2 = %s)")
+    params.extend([filters["team"], filters["team"]])
+if filters["player"] != "All":
+    conditions.append("MATCH_KEY in (select MATCH_KEY from IPL_ANALYTICS.ANALYTICS.FACT_PLAYER_PERFORMANCE where PLAYER_NAME = %s)")
+    params.append(filters["player"])
 where = " AND ".join(conditions)
 
 try:

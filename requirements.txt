@@ -10,4 +10,3 @@ pytest>=8.0,<10.0
 ruff>=0.8,<1.0
 black>=24.0,<26.0
 
-# dbt and Streamlit dependencies will be added in their respective phases.

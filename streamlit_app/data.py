@@ -9,17 +9,6 @@ import pandas as pd
 import streamlit as st
 
 
-ANALYTICS_TABLES = {
-    "matches": "IPL_ANALYTICS.ANALYTICS.FACT_MATCHES",
-    "players": "IPL_ANALYTICS.ANALYTICS.DIM_PLAYER",
-    "teams": "IPL_ANALYTICS.ANALYTICS.DIM_TEAM",
-    "seasons": "IPL_ANALYTICS.ANALYTICS.DIM_SEASON",
-    "venues": "IPL_ANALYTICS.ANALYTICS.DIM_VENUE",
-    "performance": "IPL_ANALYTICS.ANALYTICS.FACT_PLAYER_PERFORMANCE",
-    "deliveries": "IPL_ANALYTICS.ANALYTICS.FACT_DELIVERIES",
-}
-
-
 def _setting(name: str, default: Any = None) -> Any:
     """Read Streamlit secrets first, then environment variables."""
     try:
@@ -84,29 +73,6 @@ def load_filter_options() -> dict[str, list[str]]:
 def _values(sql: str) -> list[str]:
     frame = query(sql)
     return frame["VALUE"].dropna().astype(str).tolist() if "VALUE" in frame else []
-
-
-def where_clause(
-    season: str | None = None,
-    team: str | None = None,
-    player: str | None = None,
-    venue: str | None = None,
-    aliases: dict[str, str] | None = None,
-) -> tuple[str, list[str]]:
-    """Build parameterized filters for known analytics columns."""
-    aliases = aliases or {}
-    conditions: list[str] = []
-    params: list[str] = []
-    for value, key, default_column in (
-        (season, "season", "f.season"),
-        (team, "team", "f.team_1"),
-        (player, "player", "p.player_name"),
-        (venue, "venue", "f.venue"),
-    ):
-        if value and value != "All":
-            conditions.append(f"{aliases.get(key, default_column)} = %s")
-            params.append(value)
-    return (" AND ".join(conditions) or "1=1", params)
 
 
 def app_css() -> None:
