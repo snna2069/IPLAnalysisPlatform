@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the boundaries for the IPL Data Analysis platform. Phases 1-5 implement ingestion, orchestration, Snowflake loading, dbt analytics modeling, and dbt quality checks. Phase 6 documents Power BI consumption, Phase 7 provides Streamlit consumption, and Phase 8 adds optional Terraform infrastructure.
+This document defines the boundaries for the IPL Data Analysis platform. Phases 1-5 implement ingestion, orchestration, Snowflake loading, dbt analytics modeling, and dbt quality checks. Phase 6 documents Power BI consumption, Phase 7 provides Streamlit consumption, Phase 8 adds optional Terraform infrastructure, and Phase 9 documents end-to-end integration.
 
 ## Data Flow
 
@@ -33,7 +33,7 @@ dbt models and tests
 
 ### 1. IPL Data Sources
 
-External APIs, downloadable files, or other trusted IPL data providers are the system inputs. Source details and access patterns will be documented when ingestion is implemented.
+External APIs, downloadable files, or other trusted IPL data providers are the system inputs. Source URLs and formats are configured through `IPL_SOURCE_URLS`.
 
 ### 2. Python Data Ingestion
 
@@ -51,11 +51,11 @@ Local data is ignored by Git because it can be large, sensitive, or reproducible
 
 ### 4. Apache Airflow
 
-Airflow coordinates the Phase 1 ingestion and validation tasks through `airflow/dags/ipl_pipeline_dag.py`. The local Docker Compose stack mounts DAGs, plugins, logs, the Python source tree, and data lake directories. The DAG includes a warehouse handoff task so a future Snowflake load can be inserted without redesigning the upstream flow.
+Airflow coordinates ingestion, raw validation, Snowflake loading, dbt execution, and dbt quality checks through `airflow/dags/ipl_pipeline_dag.py`. The local Docker Compose stack mounts DAGs, plugins, logs, the Python source tree, and data lake directories.
 
 ### 5. Snowflake
 
-Snowflake provides the warehouse landing zone. `IPL_ANALYTICS.RAW` contains source-shaped `VARIANT` records and an ingestion metadata ledger keyed by file hash. `IPL_ANALYTICS.ANALYTICS` is reserved for future modeled data. Credentials are supplied through environment variables or a managed secret mechanism; no credentials are stored in source code.
+Snowflake provides the warehouse landing zone and analytics store. `IPL_ANALYTICS.RAW` contains source-shaped `VARIANT` records and an ingestion metadata ledger keyed by file hash. `IPL_ANALYTICS.ANALYTICS` contains dbt-generated dimensions and facts. Credentials are supplied through environment variables or a managed secret mechanism; no credentials are stored in source code.
 
 ### 6. dbt
 
@@ -63,7 +63,7 @@ The `dbt/ipl_analytics/` project contains source definitions, staging views, int
 
 ### 7. Consumption
 
-Power BI will provide the primary dashboard experience. Streamlit is an optional Python-based application for exploratory or self-service analysis. Both consumers should read curated analytical models rather than raw source files.
+Power BI provides the documented dashboard design, and Streamlit provides the interactive Python frontend. Both consumers read curated analytical models rather than raw source files.
 
 ### 8. Terraform
 

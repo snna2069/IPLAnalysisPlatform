@@ -8,7 +8,7 @@ from streamlit_app.data import app_css, query, safe_options, show_header, sideba
 st.set_page_config(page_title="IPL Analytics", page_icon="🏏", layout="wide", initial_sidebar_state="expanded")
 app_css()
 options = safe_options()
-filters = sidebar_filters(options)
+sidebar_filters(options)
 show_header(
     "IPL DATA PLATFORM / PHASE 7",
     "The league, in focus.",

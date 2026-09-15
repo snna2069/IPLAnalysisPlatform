@@ -40,7 +40,7 @@ See [docs/architecture.md](docs/architecture.md) for the responsibilities and pl
 
 ## Tech Stack
 
-- **Python:** ingestion utilities, local data processing, and future automation code
+- **Python:** ingestion utilities and local data processing
 - **Local data lake:** raw, external, and processed files under `data/`
 - **Apache Airflow:** local workflow scheduling and orchestration
 - **Snowflake:** raw data warehouse landing zone
@@ -57,17 +57,17 @@ See [docs/architecture.md](docs/architecture.md) for the responsibilities and pl
 |-- data/             # Local data lake zones
 |-- docs/             # Architecture and project documentation
 |-- ingestion/        # Configurable source extraction and raw-data validation
-|-- powerbi/          # Future Power BI assets and notes
-|-- quality/          # Future data quality checks
+|-- powerbi/          # Power BI semantic model and dashboard design
+|-- quality/          # Data quality assets and documentation
 |-- scripts/          # Developer and operational helper scripts
 |-- snowflake/        # Snowflake DDL and setup documentation
 |-- dbt/              # dbt Core project and Snowflake analytics models
-|-- streamlit_app/    # Optional future analytics application
+|-- streamlit_app/    # Streamlit analytics frontend
 |-- terraform/        # Optional Terraform infrastructure module
 |-- tests/            # Automated tests
-|-- transformations/  # Future dbt project
+|-- transformations/  # Reserved for future transformation extensions
 |-- .env.example      # Safe configuration template
-|-- requirements.txt  # Python dependencies for this phase
+|-- requirements.txt  # Shared Python dependencies
 `-- docker-compose.yml # Local Airflow and PostgreSQL services
 ```
 
@@ -117,7 +117,7 @@ The DAG runs `start`, `ingest_data`, `validate_data`, `load_to_snowflake`, `dbt_
 
 Run [snowflake/01_setup.sql](snowflake/01_setup.sql) in Snowflake before enabling the load task. Copy the Snowflake settings in `.env.example` into `.env` and replace the account, user, password, and role values. The loader reads validated files from `data/raw/`, stores records as `VARIANT` in `IPL_ANALYTICS.RAW`, and logs counts in `RAW.INGESTION_METADATA`.
 
-The Phase 3-5 DAG chain is `start → ingest_data → validate_data → load_to_snowflake → dbt_run → dbt_test → pipeline_success`. `validate_data` and `dbt_test` fail their tasks when quality checks fail. The Snowflake loader uses a SHA-256 file hash as its load key, so rerunning a DAG does not load the same file twice. dbt models use separate `STAGING`, `INTERMEDIATE`, and `ANALYTICS` schemas rather than changing the raw tables.
+The Phase 3-9 DAG chain is `start → ingest_data → validate_data → load_to_snowflake → dbt_run → dbt_test → pipeline_success`. `validate_data` and `dbt_test` fail their tasks when quality checks fail. The Snowflake loader uses a SHA-256 file hash as its load key, so rerunning a DAG does not load the same file twice. dbt models use separate `STAGING`, `INTERMEDIATE`, and `ANALYTICS` schemas rather than changing the raw tables.
 
 For trial accounts, use the XSMALL warehouse created by the setup script, keep `IPL_AIRFLOW_SCHEDULE` empty, and suspend the warehouse when testing is complete. The warehouse has auto-resume disabled and a 60-second auto-suspend setting. Load small fixtures first, run only when needed, and monitor credit usage in Snowsight. Detailed SQL and operating guidance are in [snowflake/README.md](snowflake/README.md).
 
@@ -187,7 +187,7 @@ Replace the example secret values before launching. The app opens at [http://loc
 
 Phase 8 is documented in [terraform/README.md](terraform/README.md). The default Terraform configuration provisions no cloud resources and keeps the local filesystem data lake as the development default. An optional private S3 data-lake bucket can be enabled explicitly with `enable_s3_data_lake = true`; review costs and the plan before applying.
 
-## Future Phases
+## Project Milestones
 
 1. Implement source ingestion and store immutable files in the raw data zone. (Complete)
 2. Add Airflow DAGs for scheduled ingestion and downstream dependencies. (Complete)
@@ -197,6 +197,7 @@ Phase 8 is documented in [terraform/README.md](terraform/README.md). The default
 6. Build the Power BI semantic model and dashboard. (Complete)
 7. Add the optional Streamlit analytics experience. (Complete)
 8. Add Terraform after the application architecture and cloud resources are stable. (Complete)
+9. Complete end-to-end integration and portfolio documentation. (Complete)
 
 ## Future Improvements
 

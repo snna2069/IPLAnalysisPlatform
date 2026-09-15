@@ -49,7 +49,8 @@ def get_connection():
 @st.cache_data(ttl=900, show_spinner=False)
 def query(sql: str, params: tuple[Any, ...] = ()) -> pd.DataFrame:
     """Run a cached read-only query against the analytics schema."""
-    if not sql.lstrip().lower().startswith("select"):
+    normalized_sql = sql.lstrip().lower()
+    if not normalized_sql.startswith(("select", "with")):
         raise ValueError("The Streamlit data layer only permits SELECT queries.")
     connection = get_connection()
     cursor = connection.cursor()

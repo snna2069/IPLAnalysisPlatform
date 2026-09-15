@@ -64,7 +64,6 @@ try:
     if trends.empty:
         st.info("No season data matches the selected filter.")
     else:
-        latest = trends.iloc[-1]
         kpi = st.columns(3)
         champion = champions.iloc[0]["CHAMPION"] if not champions.empty else "Not available"
         top_runs = performers.sort_values("RUNS", ascending=False).iloc[0]["PLAYER_NAME"] if not performers.empty else "Not available"

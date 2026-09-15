@@ -22,7 +22,7 @@ S3 is disabled by default and should remain disabled for free-tier/local develop
 
 Terraform does not contain credentials. Configure AWS authentication using the standard AWS credential chain, AWS CLI profiles, environment variables, or an approved CI identity. Never put access keys in `terraform.tfvars` or source files.
 
-For a team deployment, configure a remote encrypted Terraform backend with locking in a future phase. Local state is ignored by Git in the meantime.
+For a team deployment, configure a remote encrypted Terraform backend with locking as a future infrastructure improvement. Local state is ignored by Git in the meantime.
 
 ## Usage
 
