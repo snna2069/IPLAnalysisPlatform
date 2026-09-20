@@ -31,7 +31,6 @@ services:
       PYTHONPATH: /opt/airflow/project
       IPL_DATA_DIR: /opt/airflow/project/data
       IPL_RAW_DIR: /opt/airflow/project/data/raw
-      IPL_PROCESSED_DIR: /opt/airflow/project/data/processed
       IPL_SOURCE_URLS: '${IPL_SOURCE_URLS:-{"matches":"https://cricsheet.org/downloads/ipl_json.zip"}}'
       IPL_REQUIRED_COLUMNS: '${IPL_REQUIRED_COLUMNS:-{}}'
       IPL_AIRFLOW_SCHEDULE: '${IPL_AIRFLOW_SCHEDULE:-}'

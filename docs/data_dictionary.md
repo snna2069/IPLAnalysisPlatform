@@ -11,7 +11,7 @@ The tables below are dbt-generated models in `IPL_ANALYTICS.ANALYTICS`. Power BI
 | Column | Type/role | Description |
 |---|---|---|
 | `PLAYER_KEY` | surrogate key | Stable dbt key generated from player name. |
-| `PLAYER_ID` | business key | Source player identifier. |
+| `PLAYER_ID` | business key | Source player identifier, or a deterministic name hash when player records are derived from Cricsheet match metadata. |
 | `PLAYER_NAME` | attribute | Standardized player display name. |
 | `PLAYING_ROLE` | attribute | Source playing role when available. |
 | `NATIONALITY` | attribute | Source nationality when available. |

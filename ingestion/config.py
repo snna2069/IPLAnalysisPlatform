@@ -17,7 +17,6 @@ load_dotenv(PROJECT_ROOT / ".env")
 @dataclass(frozen=True)
 class IngestionConfig:
     raw_dir: Path
-    processed_dir: Path
     metadata_file: Path
     source_urls: dict[str, str]
     required_columns: dict[str, list[str]] = field(default_factory=dict)
@@ -42,11 +41,9 @@ def get_config() -> IngestionConfig:
     """Load ingestion settings from environment variables and project defaults."""
     data_dir = Path(os.getenv("IPL_DATA_DIR", PROJECT_ROOT / "data"))
     raw_dir = Path(os.getenv("IPL_RAW_DIR", data_dir / "raw"))
-    processed_dir = Path(os.getenv("IPL_PROCESSED_DIR", data_dir / "processed"))
     metadata_file = Path(os.getenv("IPL_METADATA_FILE", raw_dir / "ingestion_metadata.json"))
     return IngestionConfig(
         raw_dir=raw_dir,
-        processed_dir=processed_dir,
         metadata_file=metadata_file,
         source_urls=_json_mapping("IPL_SOURCE_URLS", {}),
         required_columns=_json_mapping("IPL_REQUIRED_COLUMNS", {}),

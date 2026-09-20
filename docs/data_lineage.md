@@ -24,11 +24,11 @@ flowchart LR
 |---|---|---|
 | Source | Configured `IPL_SOURCE_URLS` | External records are retrieved with retries. |
 | Ingestion | `ingestion/fetch_ipl_data.py` | Raw response bytes are preserved and timestamped. |
-| Local lake | `data/raw/` and `data/processed/` | Raw files are immutable inputs; processed is a future handoff zone. |
+| Local lake | `data/raw/` and `data/processed/` | Raw files are immutable inputs; the current loader reads raw directly and processed is reserved. |
 | Validation | `ingestion/validate_raw_data.py` | Files exist, contain data, meet configured columns, and have no full duplicates. |
 | Orchestration | `airflow/dags/ipl_pipeline_dag.py` | Tasks run in dependency order with retries and hard failure propagation. |
 | Snowflake RAW | `snowflake/01_setup.sql` and `ingestion/load_to_snowflake.py` | Source records remain `VARIANT`; file hashes prevent duplicate loads. |
-| dbt | `dbt/ipl_analytics/` | JSON extraction, standardization, modeling, documentation, and quality tests. |
+| dbt | `dbt/ipl_analytics/` | JSON extraction, standardization, modeling, documentation, and quality tests. The default Cricsheet match files also supply delivery and player metadata. |
 | Consumers | `powerbi/` and `streamlit_app/` | Read-only consumption of analytics-ready marts. |
 | Infrastructure | `terraform/` | Optional cloud configuration; local filesystem remains the default. |
 

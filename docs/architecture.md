@@ -45,7 +45,7 @@ The `data/` directory is divided into zones:
 
 - `data/raw/`: immutable source extracts
 - `data/external/`: manually supplied or third-party reference files
-- `data/processed/`: cleaned files ready for warehouse loading
+- `data/processed/`: reserved for a future file-based handoff; the current Snowflake loader reads validated files directly from `data/raw/`
 
 Local data is ignored by Git because it can be large, sensitive, or reproducible from source systems.
 
@@ -59,7 +59,7 @@ Snowflake provides the warehouse landing zone and analytics store. `IPL_ANALYTIC
 
 ### 6. dbt
 
-The `dbt/ipl_analytics/` project contains source definitions, staging views, intermediate cricket calculations, dimensional models, fact models, documentation, and schema/singular tests. `dbt run` and then `dbt test` run after the Snowflake raw load in Airflow. Test failures stop the pipeline before `pipeline_success`. dbt build artifacts and local credential profiles are excluded from Git.
+The `dbt/ipl_analytics/` project contains source definitions, staging views, intermediate cricket calculations, dimensional models, fact models, documentation, and schema/singular tests. The default Cricsheet ZIP lands in `RAW_MATCHES`; staging derives deliveries and player names from its match metadata, while optional `RAW_PLAYERS` and `RAW_TEAMS` feeds can provide richer attributes. `dbt run` and then `dbt test` run after the Snowflake raw load in Airflow. Test failures stop the pipeline before `pipeline_success`. dbt build artifacts and local credential profiles are excluded from Git.
 
 ### 7. Consumption
 

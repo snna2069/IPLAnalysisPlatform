@@ -26,7 +26,7 @@ class FakeSession:
 
 def test_fetch_dataset_preserves_bytes_and_writes_metadata(tmp_path):
     payload = b"match_id,team\n1,Royal Challengers Bengaluru\n"
-    config = IngestionConfig(tmp_path / "raw", tmp_path / "processed", tmp_path / "metadata.json", {})
+    config = IngestionConfig(tmp_path / "raw", tmp_path / "metadata.json", {})
 
     metadata = fetch_dataset("matches", "https://example.test/matches.csv", config, FakeSession(payload))
 

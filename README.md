@@ -4,7 +4,7 @@
 
 IPL Data Analysis is an end-to-end data engineering and analytics project for collecting, preparing, modeling, and presenting Indian Premier League data. The project is being built in phases so that each layer can be tested and understood independently.
 
-Phase 1 implements configurable Python ingestion into the local raw data lake, metadata capture, and basic raw-file validation. Phase 2 adds local Apache Airflow orchestration. Phase 3 loads validated raw files into Snowflake. Phase 4 transforms Snowflake raw data with dbt Core into analytics-ready models. Phase 5 adds dbt schema, relationship, freshness, and IPL business-rule tests. Phase 6 documents Power BI consumption, Phase 7 provides a Streamlit frontend, and Phase 8 adds safe, optional Terraform infrastructure.
+Phase 1 implements configurable Python ingestion into the local raw data lake, metadata capture, and basic raw-file validation. Phase 2 adds local Apache Airflow orchestration. Phase 3 loads validated raw files into Snowflake. Phase 4 transforms Snowflake raw data with dbt Core into analytics-ready models. Phase 5 adds dbt schema, relationship, freshness, and IPL business-rule tests. Phase 6 documents Power BI consumption, Phase 7 provides a Streamlit frontend, and Phase 8 adds safe, optional Terraform infrastructure. The Python and SQL paths are locally testable; Snowflake execution, Airflow execution, and consumer verification require external services and credentials.
 
 ## Architecture
 
@@ -187,17 +187,19 @@ Replace the example secret values before launching. The app opens at [http://loc
 
 Phase 8 is documented in [terraform/README.md](terraform/README.md). The default Terraform configuration provisions no cloud resources and keeps the local filesystem data lake as the development default. An optional private S3 data-lake bucket can be enabled explicitly with `enable_s3_data_lake = true`; review costs and the plan before applying.
 
-## Project Milestones
+## Verification Status
 
-1. Implement source ingestion and store immutable files in the raw data zone. (Complete)
-2. Add Airflow DAGs for scheduled ingestion and downstream dependencies. (Complete)
-3. Add Snowflake connection and loading workflows. (Complete)
-4. Initialize the dbt project with staging, intermediate, and mart models. (Complete)
-5. Add dbt tests and broader data quality monitoring. (Complete)
-6. Build the Power BI semantic model and dashboard. (Complete)
-7. Add the optional Streamlit analytics experience. (Complete)
-8. Add Terraform after the application architecture and cloud resources are stable. (Complete)
-9. Complete end-to-end integration and portfolio documentation. (Complete)
+| Area | Status | Verification boundary |
+|---|---|---|
+| Python ingestion and raw validation | Implemented and unit-tested | `pytest` passes; tests use local fixtures and do not call external sources. |
+| Airflow orchestration | Implemented, environment-dependent | DAG imports in the Airflow image; run requires Docker and configured source/Snowflake settings. |
+| Snowflake loading and DDL | Implemented, environment-dependent | Requires a provisioned Snowflake database, warehouse, role, and credentials. |
+| dbt staging, intermediate, marts, and tests | Implemented, environment-dependent | Requires dbt-snowflake and a populated Snowflake RAW schema; player metadata is derived from Cricsheet match files when no player feed exists. |
+| Streamlit analytics app | Implemented, environment-dependent | Requires populated analytics marts and read-only Snowflake credentials. |
+| Power BI | Design documented | No PBIX or hosted report is committed; semantic model and measures must be verified in Power BI Desktop. |
+| Terraform | Optional module implemented | Disabled by default; `terraform validate` requires Terraform to be installed. |
+
+The project is therefore linked in code, but it is not honestly claimable as a verified production end-to-end run until the external Snowflake, Airflow, Streamlit, and Power BI checks have been executed with representative data.
 
 ## Future Improvements
 
