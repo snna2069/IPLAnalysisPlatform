@@ -5,17 +5,27 @@ sources:
     description: Immutable IPL records loaded by the Python ingestion layer.
     database: IPL_ANALYTICS
     schema: RAW
-    config:
-      freshness:
-        warn_after: {count: 24, period: hour}
-        error_after: {count: 72, period: hour}
-      loaded_at_field: LOADED_AT
     tables:
+      # Freshness is declared only on the table the default Cricsheet source
+      # populates. Declaring it at source level made `dbt source freshness` error
+      # on the optional feeds below, which stay empty unless extra IPL_SOURCE_URLS
+      # entries are configured.
       - name: raw_matches
         description: Source match records stored as Snowflake VARIANT payloads; freshness is based on the raw load timestamp.
+        config:
+          freshness:
+            warn_after: {count: 24, period: hour}
+            error_after: {count: 72, period: hour}
+          loaded_at_field: LOADED_AT
       - name: raw_deliveries
-        description: Source delivery records stored as Snowflake VARIANT payloads.
+        description: >
+          Optional delivery feed. Empty under the default Cricsheet source, which nests
+          deliveries inside each match file; stg_deliveries reads raw_matches instead.
       - name: raw_players
-        description: Source player records stored as Snowflake VARIANT payloads.
+        description: >
+          Optional player feed. Empty under the default Cricsheet source; stg_players
+          falls back to the player names recorded in match metadata.
       - name: raw_teams
-        description: Source team records stored as Snowflake VARIANT payloads.
+        description: >
+          Optional team feed. Empty under the default Cricsheet source; dim_team falls
+          back to the team names recorded on each match.

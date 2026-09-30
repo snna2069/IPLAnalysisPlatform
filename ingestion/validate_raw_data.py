@@ -10,7 +10,30 @@ from typing import Any
 
 import pandas as pd
 
-from ingestion.config import get_config
+from ingestion.config import dataset_from_filename, get_config
+
+
+def _archive_frame(path: Path) -> pd.DataFrame:
+    """Describe each JSON member of an archive as one row.
+
+    Cricsheet ships one JSON object per match, so this parses every member rather
+    than trusting the file listing: a truncated download or a corrupted member is
+    only detectable by decoding it.
+    """
+    with zipfile.ZipFile(path) as archive:
+        members = [name for name in archive.namelist() if not name.endswith("/")]
+        json_members = [name for name in members if name.lower().endswith(".json")]
+        if not json_members:
+            raise ValueError("archive contains no JSON members")
+        rows = []
+        for name in json_members:
+            payload: Any = json.loads(archive.read(name).decode("utf-8"))
+            if not isinstance(payload, dict):
+                raise ValueError(f"{name} does not contain a JSON object")
+            row: dict[str, Any] = {"file_name": name}
+            row.update({key: True for key in payload})
+            rows.append(row)
+    return pd.DataFrame(rows)
 
 
 def _as_frame(path: Path) -> pd.DataFrame:
@@ -21,10 +44,8 @@ def _as_frame(path: Path) -> pd.DataFrame:
         records = value if isinstance(value, list) else value.get("data", value)
         return pd.json_normalize(records if isinstance(records, list) else [records])
     if path.suffix.lower() == ".zip":
-        with zipfile.ZipFile(path) as archive:
-            names = [name for name in archive.namelist() if not name.endswith("/")]
-        return pd.DataFrame({"file_name": names})
-    raise ValueError(f"Validation supports CSV and JSON files, not {path.suffix}")
+        return _archive_frame(path)
+    raise ValueError(f"Validation supports CSV, JSON, and ZIP files, not {path.suffix}")
 
 
 def validate_file(path: Path, required_columns: list[str] | None = None) -> list[str]:
@@ -35,7 +56,13 @@ def validate_file(path: Path, required_columns: list[str] | None = None) -> list
         return ["file is empty"]
     try:
         frame = _as_frame(path)
-    except (ValueError, json.JSONDecodeError, pd.errors.ParserError) as exc:
+    except (
+        ValueError,
+        json.JSONDecodeError,
+        pd.errors.ParserError,
+        zipfile.BadZipFile,
+        UnicodeDecodeError,
+    ) as exc:
         return [f"unable to read data: {exc}"]
     errors = []
     if frame.empty:
@@ -51,11 +78,15 @@ def validate_file(path: Path, required_columns: list[str] | None = None) -> list
 def validate_raw_data() -> dict[str, list[str]]:
     config = get_config()
     paths = sorted(config.raw_dir.iterdir()) if config.raw_dir.exists() else []
-    return {
-        str(path): validate_file(path, config.required_columns.get(path.stem, []))
-        for path in paths
-        if path.is_file() and path.name != config.metadata_file.name
-    }
+    results: dict[str, list[str]] = {}
+    for path in paths:
+        if not path.is_file() or path.name == config.metadata_file.name:
+            continue
+        # Required columns are configured per dataset ("matches") while the stored
+        # file is prefixed ("matches_ipl_json.zip"), so resolve the dataset first.
+        dataset = dataset_from_filename(path) or path.stem
+        results[str(path)] = validate_file(path, config.required_columns.get(dataset, []))
+    return results
 
 
 def main() -> int:

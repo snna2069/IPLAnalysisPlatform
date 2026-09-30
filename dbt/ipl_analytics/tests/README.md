@@ -19,5 +19,10 @@ Singular SQL tests in this directory protect IPL-specific business rules:
   winner, and toss/winner/eliminator values are one of the two teams that played.
   This also fails if the Cricsheet toss or margin field paths regress, because the
   affected columns then arrive empty.
+- Match revisions are surfaced as a **warning**: Cricsheet republishes corrected
+  match files, and staging keeps only the newest copy. The warning reports which
+  matches changed content between loads so a silent correction is visible rather
+  than undetected. It compares payload content, not `FILE_HASH`, because the hash
+  covers the whole cumulative archive and changes on every re-download.
 
 A dbt test passes when its SQL returns zero rows. Airflow runs these tests after `dbt_run`; any non-zero result causes the `dbt_test` task and pipeline to fail, with the failing SQL and rows available in task logs and dbt artifacts.

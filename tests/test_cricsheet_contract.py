@@ -177,7 +177,7 @@ class _FakeSession:
         self.payload = payload
         self.calls = 0
 
-    def get(self, url, timeout):  # noqa: ANN001 - mirrors requests.Session.get
+    def get(self, url, timeout):
         import requests
 
         self.calls += 1

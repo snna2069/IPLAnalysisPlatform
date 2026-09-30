@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import os
@@ -12,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
-from ingestion.config import get_config
+from ingestion.config import dataset_from_filename, file_sha256, get_config
 
 
 LOGGER = logging.getLogger(__name__)
@@ -22,6 +21,9 @@ DATASET_TABLES = {
     "players": "RAW_PLAYERS",
     "teams": "RAW_TEAMS",
 }
+# Rows per INSERT. One statement per record meant a network round trip per
+# delivery, which for a full IPL history is hundreds of thousands of statements.
+LOAD_BATCH_SIZE = 500
 
 
 @dataclass(frozen=True)
@@ -61,11 +63,27 @@ def _connect(config: SnowflakeConfig):
 
 
 def _file_hash(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    return file_sha256(path)
+
+
+def insert_statement(table: str, row_count: int) -> str:
+    """Build a multi-row INSERT that still routes the payload through PARSE_JSON."""
+    if row_count < 1:
+        raise ValueError("row_count must be at least 1")
+    values = ", ".join(["(%s, %s, %s, %s, %s)"] * row_count)
+    return (
+        f"INSERT INTO {table} "
+        "(RECORD_ID, SOURCE_FILE, FILE_HASH, RAW_PAYLOAD, LOADED_AT) "
+        "SELECT column1, column2, column3, PARSE_JSON(column4), column5 "
+        f"FROM VALUES {values}"
+    )
+
+
+def _flush_batch(cursor, table: str, batch: list[tuple]) -> int:
+    if not batch:
+        return 0
+    cursor.execute(insert_statement(table, len(batch)), [value for row in batch for value in row])
+    return len(batch)
 
 
 def _records(path: Path) -> Iterator[tuple[str, Any]]:
@@ -93,11 +111,10 @@ def _records(path: Path) -> Iterator[tuple[str, Any]]:
 
 
 def _dataset_name(path: Path) -> str:
-    stem = path.stem.lower()
-    for dataset in DATASET_TABLES:
-        if stem == dataset or stem.startswith(f"{dataset}_"):
-            return dataset
-    raise ValueError(f"Cannot map {path.name} to an IPL dataset table")
+    dataset = dataset_from_filename(path)
+    if dataset is None:
+        raise ValueError(f"Cannot map {path.name} to an IPL dataset table")
+    return dataset
 
 
 def load_to_snowflake() -> dict[str, int]:
@@ -123,19 +140,21 @@ def load_to_snowflake() -> dict[str, int]:
                     LOGGER.info("Skipping already loaded file=%s", path)
                     continue
                 row_count = 0
+                loaded_at = datetime.now(timezone.utc)
+                batch: list[tuple] = []
                 for record_id, payload in _records(path):
-                    cursor.execute(
-                        f"INSERT INTO {table} "
-                        "(RECORD_ID, SOURCE_FILE, FILE_HASH, RAW_PAYLOAD, LOADED_AT) "
-                        "SELECT %s, %s, %s, PARSE_JSON(%s), %s",
-                        (record_id, path.name, file_hash, json.dumps(payload), datetime.now(timezone.utc)),
+                    batch.append(
+                        (record_id, path.name, file_hash, json.dumps(payload), loaded_at)
                     )
-                    row_count += 1
+                    if len(batch) >= LOAD_BATCH_SIZE:
+                        row_count += _flush_batch(cursor, table, batch)
+                        batch.clear()
+                row_count += _flush_batch(cursor, table, batch)
                 cursor.execute(
                     "INSERT INTO INGESTION_METADATA "
                     "(FILE_HASH, DATASET_NAME, SOURCE_FILE, RECORD_COUNT, LOADED_AT, LOAD_STATUS) "
                     "VALUES (%s, %s, %s, %s, %s, %s)",
-                    (file_hash, dataset, path.name, row_count, datetime.now(timezone.utc), "LOADED"),
+                    (file_hash, dataset, path.name, row_count, loaded_at, "LOADED"),
                 )
                 counts[dataset] = counts.get(dataset, 0) + row_count
                 LOGGER.info("Loaded dataset=%s records=%d file=%s", dataset, row_count, path.name)

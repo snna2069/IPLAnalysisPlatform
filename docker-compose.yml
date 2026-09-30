@@ -40,7 +40,15 @@ services:
       SNOWFLAKE_ROLE: '${SNOWFLAKE_ROLE:-}'
       SNOWFLAKE_WAREHOUSE: '${SNOWFLAKE_WAREHOUSE:-IPL_ANALYTICS_WH}'
       SNOWFLAKE_DATABASE: '${SNOWFLAKE_DATABASE:-IPL_ANALYTICS}'
+      # The Python loader writes to RAW; dbt builds into its own schemas. Keeping
+      # these separate stops dbt --store-failures artifacts landing in the raw zone.
       SNOWFLAKE_SCHEMA: '${SNOWFLAKE_SCHEMA:-RAW}'
+      DBT_TARGET_SCHEMA: '${DBT_TARGET_SCHEMA:-ANALYTICS}'
+      # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      # Without a stable value Airflow re-keys on restart and saved connections
+      # become unreadable; without a stable secret key active sessions are dropped.
+      AIRFLOW__CORE__FERNET_KEY: '${AIRFLOW_FERNET_KEY:-}'
+      AIRFLOW__WEBSERVER__SECRET_KEY: '${AIRFLOW_SECRET_KEY:-}'
     volumes: &airflow-volumes
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
@@ -48,11 +56,13 @@ services:
       - ./:/opt/airflow/project
     user: "${AIRFLOW_UID:-50000}:0"
     command: >-
-      bash -c "airflow db migrate &&
+      bash -c "set -e;
+      airflow db migrate;
       airflow users create --username ${AIRFLOW_ADMIN_USERNAME:-airflow}
       --password ${AIRFLOW_ADMIN_PASSWORD:-airflow}
       --firstname IPL --lastname Admin --role Admin
-      --email ${AIRFLOW_ADMIN_EMAIL:-airflow@example.com} || true"
+      --email ${AIRFLOW_ADMIN_EMAIL:-airflow@example.com}
+      || echo 'Admin user already exists; continuing.'"
 
   airflow-webserver:
     build:

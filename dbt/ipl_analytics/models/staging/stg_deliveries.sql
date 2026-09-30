@@ -1,7 +1,8 @@
 {{ config(materialized='view') }}
 
 -- Cricsheet match files store innings and deliveries inside RAW_MATCHES.
--- Deduplicate the cumulative archive first so a re-download cannot duplicate deliveries.
+-- Deduplicate the cumulative archive first so a re-download cannot duplicate
+-- deliveries, preferring the highest meta.revision for a corrected match.
 with source_matches as (
     select
         record_id,
@@ -12,7 +13,10 @@ with source_matches as (
     from {{ source('raw', 'raw_matches') }}
     qualify row_number() over (
         partition by record_id
-        order by loaded_at desc, file_hash
+        order by
+            try_to_number(raw_payload:meta:revision::varchar) desc nulls last,
+            loaded_at desc,
+            file_hash
     ) = 1
 ),
 flattened as (

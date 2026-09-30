@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from dataclasses import dataclass, field
@@ -12,6 +13,28 @@ from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(PROJECT_ROOT / ".env")
+
+# Dataset names recognised in raw file names. Ingestion prefixes downloads with the
+# dataset name, so "matches_ipl_json.zip" resolves to "matches".
+DATASET_NAMES: tuple[str, ...] = ("matches", "deliveries", "players", "teams")
+
+
+def dataset_from_filename(path: Path) -> str | None:
+    """Resolve the IPL dataset a raw file belongs to, or None when unrecognised."""
+    stem = path.stem.lower()
+    for dataset in DATASET_NAMES:
+        if stem == dataset or stem.startswith(f"{dataset}_"):
+            return dataset
+    return None
+
+
+def file_sha256(path: Path) -> str:
+    """Stream a SHA-256 digest so large archives are not read into memory."""
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 @dataclass(frozen=True)

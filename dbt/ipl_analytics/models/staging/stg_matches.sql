@@ -1,7 +1,8 @@
 {{ config(materialized='view') }}
 
 -- Cricsheet publishes one cumulative archive, so a re-download reloads every match
--- under a new FILE_HASH. Keep only the most recent copy of each source record.
+-- under a new FILE_HASH. Keep only the newest copy of each source record, preferring
+-- the highest meta.revision because Cricsheet increments it when a match is corrected.
 with source_matches as (
     select
         record_id,
@@ -12,12 +13,16 @@ with source_matches as (
     from {{ source('raw', 'raw_matches') }}
     qualify row_number() over (
         partition by record_id
-        order by loaded_at desc, file_hash
+        order by
+            try_to_number(raw_payload:meta:revision::varchar) desc nulls last,
+            loaded_at desc,
+            file_hash
     ) = 1
 ),
 cleaned as (
     select
         record_id::varchar as match_id,
+        try_to_number(raw_payload:meta:revision::varchar) as source_revision,
         nullif(trim(raw_payload:info:season::varchar), '') as season,
         try_to_date(raw_payload:info:dates[0]::varchar) as match_date,
         nullif(trim(raw_payload:info:venue::varchar), '') as venue,
