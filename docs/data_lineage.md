@@ -27,8 +27,8 @@ flowchart LR
 | Local lake | `data/raw/` and `data/processed/` | Raw files are immutable inputs; the current loader reads raw directly and processed is reserved. |
 | Validation | `ingestion/validate_raw_data.py` | Files exist, contain data, meet configured columns, and have no full duplicates. |
 | Orchestration | `airflow/dags/ipl_pipeline_dag.py` | Tasks run in dependency order with retries and hard failure propagation. |
-| Snowflake RAW | `snowflake/01_setup.sql` and `ingestion/load_to_snowflake.py` | Source records remain `VARIANT`; file hashes prevent duplicate loads. |
-| dbt | `dbt/ipl_analytics/` | JSON extraction, standardization, modeling, documentation, and quality tests. The default Cricsheet match files also supply delivery and player metadata. |
+| Snowflake RAW | `snowflake/01_setup.sql` and `ingestion/load_to_snowflake.py` | Source records remain `VARIANT`. A file hash skips reloading an unchanged archive, and records are inserted in batches rather than one statement per row. |
+| dbt | `dbt/ipl_analytics/` | JSON extraction, standardization, modeling, documentation, and quality tests. Staging deduplicates the cumulative archive by match, preferring the highest `meta.revision`. The default Cricsheet match files also supply delivery and player metadata. |
 | Consumers | `powerbi/` and `streamlit_app/` | Read-only consumption of analytics-ready marts. |
 | Infrastructure | `terraform/` | Optional cloud configuration; local filesystem remains the default. |
 

@@ -16,13 +16,13 @@ venue = filters["venue"]
 params = []
 conditions = ["1=1"]
 if season != "All":
-    conditions.append("m.season = %s")
+    conditions.append("f.season = %s")
     params.append(season)
 if venue != "All":
-    conditions.append("m.venue = %s")
+    conditions.append("f.venue = %s")
     params.append(venue)
 if team != "All":
-    conditions.append("(m.team_1 = %s or m.team_2 = %s)")
+    conditions.append("(f.team_1 = %s or f.team_2 = %s)")
     params.extend([team, team])
 where = " AND ".join(conditions)
 
@@ -30,12 +30,12 @@ try:
     team_stats = query(
         f"""
         with participation as (
-            select team_1 as team_name, match_key, winner_key, team_1_key as team_key from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES f
-            join IPL_ANALYTICS.ANALYTICS.DIM_MATCH m using (match_key)
+            select f.team_1 as team_name, f.match_key, f.winner_key, f.team_1_key as team_key
+            from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES f
             where {where}
             union all
-            select team_2, match_key, winner_key, team_2_key from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES f
-            join IPL_ANALYTICS.ANALYTICS.DIM_MATCH m using (match_key)
+            select f.team_2, f.match_key, f.winner_key, f.team_2_key
+            from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES f
             where {where}
         )
          select team_name, matches_played, wins,

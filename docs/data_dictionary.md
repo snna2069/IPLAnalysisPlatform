@@ -64,9 +64,12 @@ The tables below are dbt-generated models in `IPL_ANALYTICS.ANALYTICS`. Power BI
 | `TEAM_1_KEY`, `TEAM_2_KEY` | foreign keys | References `DIM_TEAM` for participating teams. |
 | `MATCH_DATE` | date | Parsed match date. |
 | `SEASON`, `VENUE`, `TEAM_1`, `TEAM_2` | denormalized attributes | Convenient match context for consumers. |
-| `TOSS_WINNER`, `TOSS_DECISION` | outcome attributes | Toss result. |
-| `WINNER`, `RESULT_TYPE` | outcome attributes | Match result. |
-| `WIN_BY_RUNS`, `WIN_BY_WICKETS` | numeric measures | Winning margin by result type. |
+| `TOSS_WINNER`, `TOSS_DECISION` | outcome attributes | Toss result; decision is lower-case `bat` or `field`. |
+| `WINNER`, `RESULT_TYPE` | outcome attributes | `WINNER` is the Cricsheet outcome winner; `RESULT_TYPE` is `win`, `tie`, `no result`, or `draw`. |
+| `ELIMINATOR` | outcome attribute | Super-over winner, populated only when the match was tied. |
+| `MATCH_WINNER` | outcome attribute | Team that actually won: `WINNER`, or `ELIMINATOR` after a tie. Null for a no result. Prefer this over `WINNER` for win counts. |
+| `RESULT_METHOD` | outcome attribute | Method that decided the result, such as `D/L`. |
+| `WIN_BY_RUNS`, `WIN_BY_WICKETS` | numeric measures | Winning margin. Null means the margin does not apply (the other margin type, a tie, or a no result) and must not be read as zero. |
 
 ## Fact Tables
 
@@ -74,7 +77,7 @@ The tables below are dbt-generated models in `IPL_ANALYTICS.ANALYTICS`. Power BI
 
 **Grain:** one row per match.
 
-Contains `MATCH_KEY`, `SEASON_KEY`, `VENUE_KEY`, `TEAM_1_KEY`, `TEAM_2_KEY`, `WINNER_KEY`, match date/context, toss attributes, result, and win margins. Use it for match counts, wins, win percentages, toss analysis, venues, and season outcomes.
+Contains `MATCH_KEY`, `SEASON_KEY`, `VENUE_KEY`, `TEAM_1_KEY`, `TEAM_2_KEY`, `WINNER_KEY`, match date/context, toss attributes, result, eliminator, method, `MATCH_WINNER`, and win margins. Use it for match counts, wins, win percentages, toss analysis, venues, and season outcomes.
 
 ### `FACT_DELIVERIES`
 
@@ -88,7 +91,7 @@ Contains `MATCH_KEY`, `SEASON_KEY`, `VENUE_KEY`, `TEAM_1_KEY`, `TEAM_2_KEY`, `WI
 | Runs | `BATTER_RUNS`, `EXTRA_RUNS`, `TOTAL_RUNS` | Runs recorded for the delivery. |
 | Extras | `WIDES`, `NO_BALLS`, `BYES`, `LEG_BYES`, `PENALTY_RUNS` | Extra-run categories. |
 | Wickets | `PLAYER_OUT`, `DISMISSAL_KIND`, `IS_WICKET` | Dismissal details and flag. |
-| Flags | `IS_FOUR`, `IS_SIX`, `IS_ILLEGAL_DELIVERY` | dbt-derived cricket indicators. |
+| Flags | `IS_FOUR`, `IS_SIX`, `IS_ILLEGAL_DELIVERY`, `IS_SUPER_OVER` | dbt-derived cricket indicators. `IS_SUPER_OVER` marks super-over deliveries, which are currently still included in aggregates. |
 
 ### `FACT_PLAYER_PERFORMANCE`
 

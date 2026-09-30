@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "data_version": "1.2.0",
+    "created": "2024-05-20",
+    "revision": 1
+  },
+  "info": {
+    "balls_per_over": 6,
+    "city": "Chennai",
+    "dates": ["2024-05-18"],
+    "event": {
+      "name": "Indian Premier League",
+      "match_number": 60,
+      "stage": "Final"
+    },
+    "gender": "male",
+    "match_type": "T20",
+    "outcome": {
+      "result": "no result"
+    },
+    "overs": 20,
+    "players": {
+      "Chennai Super Kings": ["RD Gaikwad", "MS Dhoni"],
+      "Rajasthan Royals": ["SV Samson", "YS Chahal"]
+    },
+    "registry": {
+      "people": {
+        "RD Gaikwad": "1b8d4a9c-0004-4000-8000-000000000004",
+        "MS Dhoni": "1b8d4a9c-0005-4000-8000-000000000005",
+        "SV Samson": "1b8d4a9c-000f-4000-8000-00000000000f",
+        "YS Chahal": "1b8d4a9c-0010-4000-8000-000000000010"
+      }
+    },
+    "season": "2024",
+    "team_type": "club",
+    "teams": ["Chennai Super Kings", "Rajasthan Royals"],
+    "toss": {
+      "decision": "bat",
+      "winner": "Rajasthan Royals"
+    },
+    "venue": "M.A. Chidambaram Stadium"
+  },
+  "innings": []
+}

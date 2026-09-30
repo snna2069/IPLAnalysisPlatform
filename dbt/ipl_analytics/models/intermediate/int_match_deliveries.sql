@@ -7,6 +7,7 @@ select
     over_number,
     ball_number,
     batting_team,
+    is_super_over,
     batter,
     bowler,
     non_striker,

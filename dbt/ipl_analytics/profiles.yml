@@ -9,6 +9,9 @@ ipl_analytics:
       role: "{{ env_var('SNOWFLAKE_ROLE') }}"
       database: "{{ env_var('SNOWFLAKE_DATABASE', 'IPL_ANALYTICS') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'IPL_ANALYTICS_WH') }}"
-      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'ANALYTICS') }}"
+      # Deliberately separate from SNOWFLAKE_SCHEMA, which points the Python loader
+      # at RAW. Sharing that variable sent dbt's --store-failures audit tables into
+      # the immutable raw zone.
+      schema: "{{ env_var('DBT_TARGET_SCHEMA', 'ANALYTICS') }}"
       threads: 4
       client_session_keep_alive: false

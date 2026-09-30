@@ -1,7 +1,25 @@
 {{ config(materialized='view') }}
 
 -- Cricsheet match files store innings and deliveries inside RAW_MATCHES.
-with flattened as (
+-- Deduplicate the cumulative archive first so a re-download cannot duplicate
+-- deliveries, preferring the highest meta.revision for a corrected match.
+with source_matches as (
+    select
+        record_id,
+        source_file,
+        file_hash,
+        raw_payload,
+        loaded_at
+    from {{ source('raw', 'raw_matches') }}
+    qualify row_number() over (
+        partition by record_id
+        order by
+            try_to_number(raw_payload:meta:revision::varchar) desc nulls last,
+            loaded_at desc,
+            file_hash
+    ) = 1
+),
+flattened as (
     select
         r.record_id as match_id,
         r.source_file,
@@ -9,10 +27,11 @@ with flattened as (
         r.loaded_at,
         innings.index as innings_number,
         innings.value:team::varchar as batting_team,
+        coalesce(innings.value:super_over::boolean, false) as is_super_over,
         overs.value:over::integer as over_number,
         deliveries.index as ball_number,
         deliveries.value as ball
-    from {{ source('raw', 'raw_matches') }} r,
+    from source_matches r,
         lateral flatten(input => r.raw_payload:innings) innings,
         lateral flatten(input => innings.value:overs) overs,
         lateral flatten(input => overs.value:deliveries) deliveries
@@ -25,6 +44,7 @@ cleaned as (
         over_number,
         ball_number,
         {{ standardize_team('batting_team') }} as batting_team,
+        is_super_over,
         nullif(trim(ball:batter::varchar), '') as batter,
         nullif(trim(ball:bowler::varchar), '') as bowler,
         nullif(trim(ball:non_striker::varchar), '') as non_striker,

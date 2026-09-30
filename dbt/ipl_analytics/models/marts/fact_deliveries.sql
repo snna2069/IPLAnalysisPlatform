@@ -12,6 +12,7 @@ select
     d.over_number,
     d.ball_number,
     d.batting_team,
+    d.is_super_over,
     d.batter,
     d.bowler,
     d.non_striker,

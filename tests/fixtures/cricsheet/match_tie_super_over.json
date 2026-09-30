@@ -1,0 +1,111 @@
+{
+  "meta": {
+    "data_version": "1.2.0",
+    "created": "2024-04-10",
+    "revision": 1
+  },
+  "info": {
+    "balls_per_over": 6,
+    "city": "Mumbai",
+    "dates": ["2024-04-08"],
+    "event": {
+      "name": "Indian Premier League",
+      "match_number": 12
+    },
+    "gender": "male",
+    "match_type": "T20",
+    "outcome": {
+      "result": "tie",
+      "eliminator": "Kings XI Punjab"
+    },
+    "overs": 20,
+    "players": {
+      "Mumbai Indians": ["RG Sharma", "SA Yadav"],
+      "Kings XI Punjab": ["S Dhawan", "Arshdeep Singh"]
+    },
+    "registry": {
+      "people": {
+        "RG Sharma": "1b8d4a9c-0007-4000-8000-000000000007",
+        "SA Yadav": "1b8d4a9c-0008-4000-8000-000000000008",
+        "S Dhawan": "1b8d4a9c-0009-4000-8000-000000000009",
+        "Arshdeep Singh": "1b8d4a9c-000a-4000-8000-00000000000a"
+      }
+    },
+    "season": "2024",
+    "team_type": "club",
+    "teams": ["Mumbai Indians", "Kings XI Punjab"],
+    "toss": {
+      "decision": "field",
+      "winner": "Mumbai Indians"
+    },
+    "venue": "Wankhede Stadium"
+  },
+  "innings": [
+    {
+      "team": "Mumbai Indians",
+      "overs": [
+        {
+          "over": 0,
+          "deliveries": [
+            {
+              "batter": "RG Sharma",
+              "bowler": "Arshdeep Singh",
+              "non_striker": "SA Yadav",
+              "runs": {"batter": 4, "extras": 0, "total": 4}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "team": "Kings XI Punjab",
+      "overs": [
+        {
+          "over": 0,
+          "deliveries": [
+            {
+              "batter": "S Dhawan",
+              "bowler": "SA Yadav",
+              "non_striker": "Arshdeep Singh",
+              "runs": {"batter": 4, "extras": 0, "total": 4}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "team": "Kings XI Punjab",
+      "super_over": true,
+      "overs": [
+        {
+          "over": 0,
+          "deliveries": [
+            {
+              "batter": "S Dhawan",
+              "bowler": "SA Yadav",
+              "non_striker": "Arshdeep Singh",
+              "runs": {"batter": 6, "extras": 0, "total": 6}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "team": "Mumbai Indians",
+      "super_over": true,
+      "overs": [
+        {
+          "over": 0,
+          "deliveries": [
+            {
+              "batter": "RG Sharma",
+              "bowler": "Arshdeep Singh",
+              "non_striker": "SA Yadav",
+              "runs": {"batter": 1, "extras": 0, "total": 1}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

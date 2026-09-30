@@ -37,6 +37,9 @@ with DAG(
         "depends_on_past": False,
         "retries": 2,
         "retry_delay": timedelta(minutes=5),
+        # Without a timeout a stalled download or a runaway warehouse query holds
+        # the slot indefinitely and keeps the warehouse resumed.
+        "execution_timeout": timedelta(minutes=60),
     },
     tags=["ipl", "phase-9", "snowflake", "dbt", "quality"],
 ) as dag:
@@ -45,18 +48,21 @@ with DAG(
     ingest_data = PythonOperator(
         task_id="ingest_data",
         python_callable=ingest,
+        execution_timeout=timedelta(minutes=30),
         doc="Download configured IPL sources into data/raw and write ingestion metadata.",
     )
 
     validate_data_task = PythonOperator(
         task_id="validate_data",
         python_callable=validate_data,
+        execution_timeout=timedelta(minutes=20),
         doc="Check raw files for presence, records, required columns, and duplicates.",
     )
 
     load_to_snowflake_task = PythonOperator(
         task_id="load_to_snowflake",
         python_callable=load_to_snowflake,
+        execution_timeout=timedelta(minutes=120),
         doc="Load validated raw files once into Snowflake RAW tables.",
     )
 

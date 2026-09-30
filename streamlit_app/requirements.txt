@@ -1,4 +1,5 @@
 streamlit>=1.40,<2.0
 pandas>=2.2,<3.0
-snowflake-connector-python>=3.12,<4.0
+# The [pandas] extra supplies pyarrow, which cursor.fetch_pandas_all() requires.
+snowflake-connector-python[pandas]>=3.12,<4.0
 python-dotenv>=1.0,<2.0
