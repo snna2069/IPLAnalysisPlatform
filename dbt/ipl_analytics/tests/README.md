@@ -14,5 +14,10 @@ Singular SQL tests in this directory protect IPL-specific business rules:
 - Match team and winner references resolve to `dim_team`.
 - Player performance values cannot be negative.
 - A match cannot list the same team twice.
+- Match outcome fields stay internally consistent: a decided match names a winner
+  and exactly one victory margin, a tie is resolved by an eliminator rather than a
+  winner, and toss/winner/eliminator values are one of the two teams that played.
+  This also fails if the Cricsheet toss or margin field paths regress, because the
+  affected columns then arrive empty.
 
 A dbt test passes when its SQL returns zero rows. Airflow runs these tests after `dbt_run`; any non-zero result causes the `dbt_test` task and pipeline to fail, with the failing SQL and rows available in task logs and dbt artifacts.

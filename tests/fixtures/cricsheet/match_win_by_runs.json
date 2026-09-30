@@ -1,0 +1,128 @@
+{
+  "meta": {
+    "data_version": "1.2.0",
+    "created": "2024-04-01",
+    "revision": 1
+  },
+  "info": {
+    "balls_per_over": 6,
+    "city": "Bengaluru",
+    "dates": ["2024-03-22"],
+    "event": {
+      "name": "Indian Premier League",
+      "match_number": 1
+    },
+    "gender": "male",
+    "match_type": "T20",
+    "outcome": {
+      "winner": "Royal Challengers Bangalore",
+      "by": {
+        "runs": 31
+      }
+    },
+    "overs": 20,
+    "player_of_match": ["V Kohli"],
+    "players": {
+      "Royal Challengers Bangalore": ["V Kohli", "F du Plessis", "M Siraj"],
+      "Chennai Super Kings": ["RD Gaikwad", "MS Dhoni", "DL Chahar"]
+    },
+    "registry": {
+      "people": {
+        "V Kohli": "1b8d4a9c-0001-4000-8000-000000000001",
+        "F du Plessis": "1b8d4a9c-0002-4000-8000-000000000002",
+        "M Siraj": "1b8d4a9c-0003-4000-8000-000000000003",
+        "RD Gaikwad": "1b8d4a9c-0004-4000-8000-000000000004",
+        "MS Dhoni": "1b8d4a9c-0005-4000-8000-000000000005",
+        "DL Chahar": "1b8d4a9c-0006-4000-8000-000000000006"
+      }
+    },
+    "season": "2024",
+    "team_type": "club",
+    "teams": ["Royal Challengers Bangalore", "Chennai Super Kings"],
+    "toss": {
+      "decision": "bat",
+      "winner": "Chennai Super Kings"
+    },
+    "venue": "M Chinnaswamy Stadium"
+  },
+  "innings": [
+    {
+      "team": "Royal Challengers Bangalore",
+      "overs": [
+        {
+          "over": 0,
+          "deliveries": [
+            {
+              "batter": "V Kohli",
+              "bowler": "DL Chahar",
+              "non_striker": "F du Plessis",
+              "runs": {"batter": 4, "extras": 0, "total": 4}
+            },
+            {
+              "batter": "V Kohli",
+              "bowler": "DL Chahar",
+              "non_striker": "F du Plessis",
+              "runs": {"batter": 6, "extras": 0, "total": 6}
+            },
+            {
+              "batter": "V Kohli",
+              "bowler": "DL Chahar",
+              "non_striker": "F du Plessis",
+              "extras": {"wides": 1},
+              "runs": {"batter": 0, "extras": 1, "total": 1}
+            },
+            {
+              "batter": "V Kohli",
+              "bowler": "DL Chahar",
+              "non_striker": "F du Plessis",
+              "extras": {"legbyes": 4},
+              "runs": {"batter": 0, "extras": 4, "total": 4}
+            },
+            {
+              "batter": "F du Plessis",
+              "bowler": "DL Chahar",
+              "non_striker": "V Kohli",
+              "runs": {"batter": 0, "extras": 0, "total": 0},
+              "wickets": [
+                {
+                  "player_out": "F du Plessis",
+                  "kind": "bowled",
+                  "fielders": []
+                }
+              ]
+            },
+            {
+              "batter": "V Kohli",
+              "bowler": "DL Chahar",
+              "non_striker": "M Siraj",
+              "runs": {"batter": 1, "extras": 0, "total": 1},
+              "wickets": [
+                {
+                  "player_out": "M Siraj",
+                  "kind": "run out",
+                  "fielders": [{"name": "MS Dhoni"}]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "team": "Chennai Super Kings",
+      "overs": [
+        {
+          "over": 0,
+          "deliveries": [
+            {
+              "batter": "RD Gaikwad",
+              "bowler": "M Siraj",
+              "non_striker": "MS Dhoni",
+              "runs": {"batter": 2, "extras": 0, "total": 2}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

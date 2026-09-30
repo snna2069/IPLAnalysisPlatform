@@ -1,0 +1,88 @@
+{
+  "meta": {
+    "data_version": "1.2.0",
+    "created": "2024-05-02",
+    "revision": 1
+  },
+  "info": {
+    "balls_per_over": 6,
+    "city": "Kolkata",
+    "dates": ["2024-04-30"],
+    "event": {
+      "name": "Indian Premier League",
+      "match_number": 44
+    },
+    "gender": "male",
+    "match_type": "T20",
+    "outcome": {
+      "winner": "Delhi Daredevils",
+      "by": {
+        "wickets": 6
+      },
+      "method": "D/L"
+    },
+    "overs": 20,
+    "players": {
+      "Kolkata Knight Riders": ["SP Narine", "AD Russell"],
+      "Delhi Daredevils": ["RR Pant", "A Nortje"]
+    },
+    "registry": {
+      "people": {
+        "SP Narine": "1b8d4a9c-000b-4000-8000-00000000000b",
+        "AD Russell": "1b8d4a9c-000c-4000-8000-00000000000c",
+        "RR Pant": "1b8d4a9c-000d-4000-8000-00000000000d",
+        "A Nortje": "1b8d4a9c-000e-4000-8000-00000000000e"
+      }
+    },
+    "season": "2007/08",
+    "team_type": "club",
+    "teams": ["Kolkata Knight Riders", "Delhi Daredevils"],
+    "toss": {
+      "decision": "field",
+      "winner": "Delhi Daredevils"
+    },
+    "venue": "Eden Gardens"
+  },
+  "innings": [
+    {
+      "team": "Kolkata Knight Riders",
+      "overs": [
+        {
+          "over": 0,
+          "deliveries": [
+            {
+              "batter": "SP Narine",
+              "bowler": "A Nortje",
+              "non_striker": "AD Russell",
+              "extras": {"noballs": 1},
+              "runs": {"batter": 2, "extras": 1, "total": 3}
+            },
+            {
+              "batter": "SP Narine",
+              "bowler": "A Nortje",
+              "non_striker": "AD Russell",
+              "extras": {"byes": 4},
+              "runs": {"batter": 0, "extras": 4, "total": 4}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "team": "Delhi Daredevils",
+      "overs": [
+        {
+          "over": 0,
+          "deliveries": [
+            {
+              "batter": "RR Pant",
+              "bowler": "SP Narine",
+              "non_striker": "A Nortje",
+              "runs": {"batter": 6, "extras": 0, "total": 6}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

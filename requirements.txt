@@ -2,8 +2,12 @@
 pandas>=2.2,<3.0
 requests>=2.31,<3.0
 python-dotenv>=1.0,<2.0
-snowflake-connector-python>=3.12,<4.0
-dbt-snowflake>=1.8,<2.0
+# The [pandas] extra supplies pyarrow, which cursor.fetch_pandas_all() requires.
+# Note: this <4.0 cap also holds dbt-snowflake at 1.10.x, since 1.11+ requires
+# connector 4.x. Verified to resolve and parse; lift both together if upgrading.
+snowflake-connector-python[pandas]>=3.12,<4.0
+# 1.10 is the minimum that understands the `arguments:` test syntax in schema.yml.
+dbt-snowflake>=1.10,<2.0
 
 # Development and test tooling.
 pytest>=8.0,<10.0

@@ -11,12 +11,30 @@ models:
         description: IPL season represented as a string for source compatibility.
         tests: [not_null]
       - name: toss_decision
-        description: Decision made by the toss winner.
+        description: Decision made by the toss winner, normalized to lower case.
         tests:
           - accepted_values:
               arguments:
                 values: ['bat', 'field']
                 quote: true
+      - name: toss_winner
+        description: >
+          Team that won the toss, read from Cricsheet info.toss.winner. Cricsheet
+          records a toss for every completed IPL fixture, so a null here means the
+          source path has regressed rather than that the toss was unknown.
+        tests: [not_null]
+      - name: win_by_runs
+        description: >
+          Victory margin in runs from Cricsheet info.outcome.by.runs. Null means the
+          margin does not apply (a wicket-margin win, tie, or no result).
+      - name: win_by_wickets
+        description: >
+          Victory margin in wickets from Cricsheet info.outcome.by.wickets. Null means
+          the margin does not apply.
+      - name: eliminator
+        description: Team that won a super over, set by Cricsheet only when the match was tied.
+      - name: result_method
+        description: Cricsheet info.outcome.method, such as D/L, when a method decided the result.
       - name: match_date
         description: Match date parsed as a Snowflake DATE.
       - name: venue
@@ -60,6 +78,12 @@ models:
   - name: int_match_deliveries
     description: Delivery-level cricket calculations used by delivery facts.
     columns:
+      - name: is_super_over
+        description: >
+          True when the delivery belongs to a super over. Super-over deliveries are
+          currently included in aggregates; excluding them is tracked as a separate
+          correctness change.
+        tests: [not_null]
       - name: delivery_id
         tests: [not_null, unique]
       - name: batter_runs
@@ -84,6 +108,20 @@ models:
     description: Match-level batting and bowling aggregates by player.
   - name: int_match_results
     description: Match-level winner and margin calculations.
+    columns:
+      - name: match_winner
+        description: >
+          Team that actually won the match: outcome.winner, or the super-over
+          eliminator when the scheduled innings were tied. Null for a no result.
+      - name: winner_side
+        description: >
+          Whichever of team_1 or team_2 won. Null when the match had no winner, so
+          abandoned fixtures are never attributed to a team.
+      - name: result_type
+        description: >
+          Normalized outcome: 'win' when Cricsheet omits outcome.result, otherwise the
+          source value ('tie', 'no result', or 'draw').
+        tests: [not_null]
 
   - name: dim_player
     description: Analytics player dimension.

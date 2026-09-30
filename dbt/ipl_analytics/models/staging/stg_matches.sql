@@ -1,5 +1,7 @@
 {{ config(materialized='view') }}
 
+-- Cricsheet publishes one cumulative archive, so a re-download reloads every match
+-- under a new FILE_HASH. Keep only the most recent copy of each source record.
 with source_matches as (
     select
         record_id,
@@ -8,6 +10,10 @@ with source_matches as (
         raw_payload,
         loaded_at
     from {{ source('raw', 'raw_matches') }}
+    qualify row_number() over (
+        partition by record_id
+        order by loaded_at desc, file_hash
+    ) = 1
 ),
 cleaned as (
     select
@@ -17,12 +23,16 @@ cleaned as (
         nullif(trim(raw_payload:info:venue::varchar), '') as venue,
         {{ standardize_team("raw_payload:info:teams[0]::varchar") }} as team_1,
         {{ standardize_team("raw_payload:info:teams[1]::varchar") }} as team_2,
-        {{ standardize_team("raw_payload:info:toss:decision::varchar") }} as toss_decision,
-        {{ standardize_team("raw_payload:info:toss:won::varchar") }} as toss_winner,
+        -- toss.decision is a 'bat'/'field' enum, not a team name.
+        lower(nullif(trim(raw_payload:info:toss:decision::varchar), '')) as toss_decision,
+        {{ standardize_team("raw_payload:info:toss:winner::varchar") }} as toss_winner,
         {{ standardize_team("raw_payload:info:outcome:winner::varchar") }} as winner,
+        -- Set only when a tie is decided by a super over.
+        {{ standardize_team("raw_payload:info:outcome:eliminator::varchar") }} as eliminator,
         nullif(trim(raw_payload:info:outcome:result::varchar), '') as result_type,
-        try_to_number(raw_payload:info:outcome:margin:runs::varchar) as win_by_runs,
-        try_to_number(raw_payload:info:outcome:margin:wickets::varchar) as win_by_wickets,
+        nullif(trim(raw_payload:info:outcome:method::varchar), '') as result_method,
+        try_to_number(raw_payload:info:outcome:by:runs::varchar) as win_by_runs,
+        try_to_number(raw_payload:info:outcome:by:wickets::varchar) as win_by_wickets,
         source_file,
         file_hash,
         loaded_at
