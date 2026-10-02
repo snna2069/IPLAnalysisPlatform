@@ -5,13 +5,14 @@ with batting as (
         match_id,
         batter as player_name,
         sum(batter_runs) as runs_scored,
-        count(*) as balls_faced,
+        sum(is_ball_faced) as balls_faced,
         sum(is_four) as fours,
         sum(is_six) as sixes,
         0 as wickets,
         0 as runs_conceded,
         0 as balls_bowled
     from {{ ref('int_match_deliveries') }}
+    where not is_super_over
     group by match_id, batter
 ),
 bowling as (
@@ -22,10 +23,11 @@ bowling as (
         0 as balls_faced,
         0 as fours,
         0 as sixes,
-        sum(is_wicket) as wickets,
-        sum(total_runs) as runs_conceded,
-        count_if(is_illegal_delivery = 0) as balls_bowled
+        sum(bowler_wickets) as wickets,
+        sum(bowler_runs_conceded) as runs_conceded,
+        coalesce(count_if(is_illegal_delivery = 0), 0) as balls_bowled
     from {{ ref('int_match_deliveries') }}
+    where not is_super_over
     group by match_id, bowler
 )
 select

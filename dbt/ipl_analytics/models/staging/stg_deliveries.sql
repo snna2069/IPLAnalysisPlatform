@@ -36,6 +36,20 @@ flattened as (
         lateral flatten(input => innings.value:overs) overs,
         lateral flatten(input => overs.value:deliveries) deliveries
 ),
+wicket_counts as (
+    select
+        f.match_id,
+        f.innings_number,
+        f.over_number,
+        f.ball_number,
+        count_if(w.value:kind::varchar != 'retired hurt') as team_wickets,
+        count_if(w.value:kind::varchar in (
+            'bowled', 'caught', 'caught and bowled', 'lbw', 'stumped', 'hit wicket'
+        )) as bowler_wickets
+    from flattened f,
+        lateral flatten(input => f.ball:wickets, outer => true) w
+    group by f.match_id, f.innings_number, f.over_number, f.ball_number
+),
 cleaned as (
     select
         concat_ws('-', match_id, innings_number, over_number, ball_number) as delivery_id,
@@ -56,12 +70,16 @@ cleaned as (
         coalesce(try_to_number(ball:extras:byes::varchar), 0) as byes,
         coalesce(try_to_number(ball:extras:legbyes::varchar), 0) as leg_byes,
         coalesce(try_to_number(ball:extras:penalty::varchar), 0) as penalty_runs,
+        coalesce(ball:runs:non_boundary::boolean, false) as is_non_boundary,
+        coalesce(w.team_wickets, 0) as team_wickets,
+        coalesce(w.bowler_wickets, 0) as bowler_wickets,
         nullif(trim(ball:wickets[0]:player_out::varchar), '') as player_out,
         nullif(trim(ball:wickets[0]:kind::varchar), '') as dismissal_kind,
         source_file,
         file_hash,
         loaded_at
     from flattened
+    join wicket_counts w using (match_id, innings_number, over_number, ball_number)
 )
 select *
 from cleaned

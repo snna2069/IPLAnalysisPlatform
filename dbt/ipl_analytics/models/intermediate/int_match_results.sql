@@ -3,6 +3,7 @@
 select
     match_id,
     season,
+    event_stage,
     match_date,
     venue,
     team_1,
@@ -22,8 +23,8 @@ select
     -- A tie decided by a super over records no outcome.winner, only an eliminator.
     coalesce(winner, eliminator) as match_winner,
     case
-        when winner = team_1 then team_1
-        when winner = team_2 then team_2
+        when coalesce(winner, eliminator) = team_1 then team_1
+        when coalesce(winner, eliminator) = team_2 then team_2
     end as winner_side,
     source_file,
     file_hash,

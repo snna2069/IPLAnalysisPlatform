@@ -19,8 +19,8 @@ if filters["player"] != "All":
     conditions.append("p.player_name = %s")
     params.append(filters["player"])
 if filters["team"] != "All":
-    conditions.append("(m.team_1 = %s or m.team_2 = %s)")
-    params.extend([filters["team"], filters["team"]])
+    conditions.append("exists (select 1 from IPL_ANALYTICS.ANALYTICS.BRIDGE_PLAYER_MATCH_TEAM r where r.match_key = p.match_key and r.player_key = p.player_key and r.team_name = %s)")
+    params.append(filters["team"])
 if filters["venue"] != "All":
     conditions.append("m.venue = %s")
     params.append(filters["venue"])
@@ -63,6 +63,6 @@ try:
             st.bar_chart(performance.sort_values("WICKETS", ascending=False).head(10).set_index("PLAYER_NAME")["WICKETS"], color="#2a9d8f")
         st.subheader("Player comparison")
         st.dataframe(performance, use_container_width=True, hide_index=True)
-        st.caption("Strike rate is runs per 100 balls. Economy rate is runs conceded per six legal balls; both are calculated from dbt performance aggregates.")
+        st.caption("Regular innings only; super overs are excluded. Balls faced exclude wides but include no-balls. Bowler wickets exclude run-outs and other non-bowler dismissals; conceded runs exclude byes, leg-byes, and penalties. The team filter selects players representing that team.")
 except Exception as exc:
     st.error(f"Player analysis could not load: {exc}")

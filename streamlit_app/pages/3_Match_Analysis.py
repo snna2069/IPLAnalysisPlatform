@@ -22,14 +22,14 @@ if filters["team"] != "All":
     conditions.append("(TEAM_1 = %s or TEAM_2 = %s)")
     params.extend([filters["team"], filters["team"]])
 if filters["player"] != "All":
-    conditions.append("MATCH_KEY in (select MATCH_KEY from IPL_ANALYTICS.ANALYTICS.FACT_PLAYER_PERFORMANCE where PLAYER_NAME = %s)")
+    conditions.append("MATCH_KEY in (select MATCH_KEY from IPL_ANALYTICS.ANALYTICS.BRIDGE_PLAYER_MATCH_TEAM where PLAYER_NAME = %s)")
     params.append(filters["player"])
 where = " AND ".join(conditions)
 
 try:
     matches = query(
         f"""
-        select match_date, season, venue, team_1, team_2, winner,
+        select match_date, season, venue, team_1, team_2, match_winner as winner,
                toss_winner, toss_decision, win_by_runs, win_by_wickets,
                match_key
         from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES
@@ -63,6 +63,7 @@ try:
             from IPL_ANALYTICS.ANALYTICS.FACT_DELIVERIES d
             join IPL_ANALYTICS.ANALYTICS.FACT_MATCHES m using (match_key)
             where m.match_key in ({match_keys})
+              and not d.is_super_over
             group by d.match_id, m.match_date, m.team_1, m.team_2, m.venue
             order by total_runs desc limit 10
             """,

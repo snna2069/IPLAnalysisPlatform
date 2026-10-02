@@ -60,6 +60,12 @@ models:
         tests: [not_null]
       - name: bowler
         tests: [not_null]
+      - name: team_wickets
+        description: All dismissals on the delivery except retired hurt; can exceed one.
+        tests: [not_null]
+      - name: bowler_wickets
+        description: Bowled, caught, caught and bowled, lbw, stumped, and hit wicket only.
+        tests: [not_null]
   - name: stg_players
     description: Cleaned player records from the source player table.
     columns:
@@ -80,10 +86,24 @@ models:
     columns:
       - name: is_super_over
         description: >
-          True when the delivery belongs to a super over. Super-over deliveries are
-          currently included in aggregates; excluding them is tracked as a separate
-          correctness change.
+          True when the delivery belongs to a super over. Retained in delivery
+          facts for drill-down, excluded from regular-innings performance and totals.
         tests: [not_null]
+      - name: is_ball_faced
+        description: One for non-wide deliveries, including no-balls.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+      - name: bowler_runs_conceded
+        description: Total runs minus byes, leg-byes, and penalty runs.
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
       - name: delivery_id
         tests: [not_null, unique]
       - name: batter_runs
@@ -105,7 +125,7 @@ models:
                 to: ref('dim_match')
                 field: match_id
   - name: int_player_match_performance
-    description: Match-level batting and bowling aggregates by player.
+    description: Regular-innings batting and bowling aggregates by player and match; excludes super overs.
   - name: int_match_results
     description: Match-level winner and margin calculations.
     columns:
@@ -206,6 +226,13 @@ models:
     columns:
       - name: match_key
         tests: [not_null, unique]
+      - name: winner_key
+        description: Match winner key, including the super-over decider; null for unresolved results.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_team')
+                field: team_key
       - name: season_key
         tests:
           - not_null
@@ -253,6 +280,24 @@ models:
               arguments:
                 to: ref('dim_player')
                 field: player_key
+      - name: balls_faced
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: balls_bowled
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: runs_conceded
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
       - name: runs_scored
         tests:
           - not_null
@@ -265,3 +310,69 @@ models:
           - dbt_utils.expression_is_true:
               arguments:
                 expression: ">= 0"
+
+  - name: bridge_match_team
+    description: Two rows per match, one per participating team, with opponent and resolved win flag.
+    columns:
+      - name: match_team_key
+        tests: [not_null, unique]
+      - name: match_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_match')
+                field: match_key
+      - name: team_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_team')
+                field: team_key
+      - name: is_win
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+  - name: bridge_player_match_team
+    description: Player representation from the latest revision's Cricsheet roster, including players with no batting or bowling performance.
+    columns:
+      - name: player_match_key
+        tests: [not_null, unique]
+      - name: match_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_match')
+                field: match_key
+      - name: player_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_player')
+                field: player_key
+      - name: team_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_team')
+                field: team_key
+  - name: fact_season_results
+    description: Season champion only when one explicitly marked final exists and has a resolved winner.
+    columns:
+      - name: season_key
+        tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_season')
+                field: season_key
+      - name: season
+        tests: [not_null, unique]

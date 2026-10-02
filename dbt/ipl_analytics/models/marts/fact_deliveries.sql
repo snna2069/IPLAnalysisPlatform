@@ -29,6 +29,9 @@ select
     d.is_four,
     d.is_six,
     d.is_wicket,
+    d.bowler_wickets,
+    d.bowler_runs_conceded,
+    d.is_ball_faced,
     d.is_illegal_delivery,
     d.source_file,
     d.loaded_at
