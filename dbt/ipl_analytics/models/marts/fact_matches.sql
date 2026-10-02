@@ -6,7 +6,9 @@ select
     {{ dbt_utils.generate_surrogate_key(['venue']) }} as venue_key,
     {{ dbt_utils.generate_surrogate_key(['team_1']) }} as team_1_key,
     {{ dbt_utils.generate_surrogate_key(['team_2']) }} as team_2_key,
-    {{ dbt_utils.generate_surrogate_key(['winner']) }} as winner_key,
+    case when match_winner is not null then
+        {{ dbt_utils.generate_surrogate_key(['match_winner']) }}
+    end as winner_key,
     match_id,
     match_date,
     season,

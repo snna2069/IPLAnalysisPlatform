@@ -56,6 +56,9 @@ Use a star schema with one shared match context and two primary analytic facts:
 | `fact_matches` | One row per match | Match-level outcomes, winners, toss, and margins |
 | `fact_deliveries` | One row per delivery | Runs, extras, wickets, batter, bowler, innings, and over analysis |
 | `fact_player_performance` | One row per player per match | Runs, balls, fours, sixes, wickets, conceded runs, balls bowled, strike rate, and bowling average |
+| `bridge_match_team` | One row per match/team | Participation, opponent, and resolved win flag, including super-over winners |
+| `bridge_player_match_team` | One row per rostered player/match | Team representation, including players who did not bat or bowl |
+| `fact_season_results` | One row per season | Champion from a unique explicitly marked final; null when unavailable |
 
 ### Relationships
 
@@ -72,6 +75,12 @@ Create these single-direction, one-to-many relationships with the dimension on t
 | `dim_team[team_key]` | `fact_matches[team_2_key]` | `team_2_key` | 1:* |
 | `dim_team[team_key]` | `fact_deliveries[batting_team_key]` | `batting_team_key` | 1:* |
 | `dim_player[player_key]` | `fact_player_performance[player_key]` | `player_key` | 1:* |
+| `dim_match[match_key]` | `bridge_match_team[match_key]` | `match_key` | 1:* |
+| `dim_team[team_key]` | `bridge_match_team[team_key]` | `team_key` | 1:* |
+| `dim_match[match_key]` | `bridge_player_match_team[match_key]` | `match_key` | 1:* |
+| `dim_player[player_key]` | `bridge_player_match_team[player_key]` | `player_key` | 1:* |
+| `dim_team[team_key]` | `bridge_player_match_team[team_key]` | `team_key` | 1:* |
+| `dim_season[season_key]` | `fact_season_results[season_key]` | `season_key` | 1:* |
 
 ### Role-playing dimensions
 
@@ -103,16 +112,16 @@ Total Teams =
 DISTINCTCOUNT ( dim_team[team_key] )
 
 Total Runs =
-SUM ( fact_deliveries[total_runs] )
+CALCULATE ( SUM ( fact_deliveries[total_runs] ), fact_deliveries[is_super_over] = FALSE () )
 
 Total Wickets =
-SUM ( fact_deliveries[is_wicket] )
+CALCULATE ( SUM ( fact_deliveries[is_wicket] ), fact_deliveries[is_super_over] = FALSE () )
 
 Highest Run Scorer =
 VAR PlayerTotals =
     ADDCOLUMNS (
         ALLSELECTED ( dim_player[player_key], dim_player[player_name] ),
-        "Runs", CALCULATE ( SUM ( fact_player_performance[runs_scored] ) )
+        "Runs", CALCULATE ( [Runs Scored] )
     )
 RETURN
     CONCATENATEX ( TOPN ( 1, PlayerTotals, [Runs], DESC ), dim_player[player_name], ", " )
@@ -121,7 +130,7 @@ Highest Wicket Taker =
 VAR PlayerTotals =
     ADDCOLUMNS (
         ALLSELECTED ( dim_player[player_key], dim_player[player_name] ),
-        "Wickets", CALCULATE ( SUM ( fact_player_performance[wickets] ) )
+        "Wickets", CALCULATE ( [Wickets Taken] )
     )
 RETURN
     CONCATENATEX ( TOPN ( 1, PlayerTotals, [Wickets], DESC ), dim_player[player_name], ", " )
@@ -129,21 +138,16 @@ RETURN
 
 ### Team analysis
 
-`fact_matches` contains team keys in two roles. For a simple team wins visual, use a disconnected team selector or a role-playing team dimension. With `dim_team_home` as the active team role:
+Use `bridge_match_team` for team outcomes rather than combining the two team roles.
+Do not activate a direct team-to-match relationship on this page: it would restrict
+participation to only one source team position. Win percentage includes no-results.
 
 ```DAX
 Team Wins =
-CALCULATE (
-    [Total Matches],
-    FILTER (
-        fact_matches,
-        fact_matches[winner_key]
-            = SELECTEDVALUE ( dim_team[team_key] )
-    )
-)
+SUM ( bridge_match_team[is_win] )
 
 Team Matches =
-[Total Matches]
+DISTINCTCOUNT ( bridge_match_team[match_key] )
 
 Team Win Percentage =
 DIVIDE ( [Team Wins], [Team Matches], 0 )
@@ -152,45 +156,72 @@ Runs Per Match =
 DIVIDE ( [Total Runs], [Total Matches], 0 )
 ```
 
-For a robust team win chart, add a dbt-owned bridge model in a future revision with one row per match/team participation. That avoids duplicating team-role logic in DAX and makes win percentage, head-to-head, and season performance naturally filterable.
+Filter `bridge_match_team[opponent]` for head-to-head; season and venue propagate
+through `dim_match`.
 
 ```DAX
 Head To Head Wins =
-CALCULATE (
-    [Total Matches],
-    fact_matches[winner_key] = SELECTEDVALUE ( dim_team[team_key] )
-)
+[Team Wins]
 ```
 
 ### Player analysis
 
+Performance aggregates already exclude super overs. Balls faced exclude wides,
+but include no-balls; conceded runs exclude byes, leg-byes, and penalties.
+For representation-aware team slicing, apply the selected roster's
+`player_match_key` values to `fact_player_performance[performance_key]` with
+`TREATAS` inside player measures. Both keys use the same match/player grain.
+Do not introduce bidirectional bridge relationships, and do not filter players
+merely because their opponent was the selected team.
+
 ```DAX
 Runs Scored =
-SUM ( fact_player_performance[runs_scored] )
+CALCULATE (
+    SUM ( fact_player_performance[runs_scored] ),
+    TREATAS ( VALUES ( bridge_player_match_team[player_match_key] ), fact_player_performance[performance_key] )
+)
 
 Wickets Taken =
-SUM ( fact_player_performance[wickets] )
+CALCULATE (
+    SUM ( fact_player_performance[wickets] ),
+    TREATAS ( VALUES ( bridge_player_match_team[player_match_key] ), fact_player_performance[performance_key] )
+)
 
 Balls Faced =
-SUM ( fact_player_performance[balls_faced] )
+CALCULATE (
+    SUM ( fact_player_performance[balls_faced] ),
+    TREATAS ( VALUES ( bridge_player_match_team[player_match_key] ), fact_player_performance[performance_key] )
+)
 
 Strike Rate =
 DIVIDE ( [Runs Scored] * 100, [Balls Faced], 0 )
 
 Runs Conceded =
-SUM ( fact_player_performance[runs_conceded] )
+CALCULATE (
+    SUM ( fact_player_performance[runs_conceded] ),
+    TREATAS ( VALUES ( bridge_player_match_team[player_match_key] ), fact_player_performance[performance_key] )
+)
 
 Balls Bowled =
-SUM ( fact_player_performance[balls_bowled] )
+CALCULATE (
+    SUM ( fact_player_performance[balls_bowled] ),
+    TREATAS ( VALUES ( bridge_player_match_team[player_match_key] ), fact_player_performance[performance_key] )
+)
 
 Economy Rate =
 DIVIDE ( [Runs Conceded] * 6, [Balls Bowled], 0 )
 
 Fours =
-SUM ( fact_player_performance[fours] )
+CALCULATE (
+    SUM ( fact_player_performance[fours] ),
+    TREATAS ( VALUES ( bridge_player_match_team[player_match_key] ), fact_player_performance[performance_key] )
+)
 
 Sixes =
-SUM ( fact_player_performance[sixes] )
+CALCULATE (
+    SUM ( fact_player_performance[sixes] ),
+    TREATAS ( VALUES ( bridge_player_match_team[player_match_key] ), fact_player_performance[performance_key] )
+)
 ```
 
 ### Match and season analysis
@@ -205,14 +236,18 @@ AVERAGE ( fact_matches[win_by_wickets] )
 Toss Wins By Winner =
 CALCULATE (
     [Total Matches],
-    FILTER ( fact_matches, fact_matches[toss_winner] = fact_matches[winner] )
+    FILTER ( fact_matches, fact_matches[toss_winner] = fact_matches[match_winner] )
 )
 
 Toss Advantage Percentage =
 DIVIDE ( [Toss Wins By Winner], [Total Matches], 0 )
 
 Average Runs Per Delivery =
-DIVIDE ( [Total Runs], COUNTROWS ( fact_deliveries ), 0 )
+DIVIDE (
+    [Total Runs],
+    CALCULATE ( COUNTROWS ( fact_deliveries ), fact_deliveries[is_super_over] = FALSE () ),
+    0
+)
 
 High Scoring Matches =
 COUNTROWS (
@@ -267,6 +302,9 @@ The 350-run threshold should be documented in the report tooltip and can be repl
 ### 5. Season Analysis
 
 - Champion-by-season table or ribbon chart.
+- Read champions from `fact_season_results`, never from the most wins or latest match.
+  Missing, ambiguous, and unresolved finals remain blank; match/team filters must
+  not redefine the champion.
 - Combo chart: total runs and wickets by season.
 - Top performers table with selected season context.
 - Small multiples: team win totals by season.

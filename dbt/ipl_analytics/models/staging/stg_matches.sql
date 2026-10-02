@@ -24,6 +24,8 @@ cleaned as (
         record_id::varchar as match_id,
         try_to_number(raw_payload:meta:revision::varchar) as source_revision,
         nullif(trim(raw_payload:info:season::varchar), '') as season,
+        lower(nullif(trim(raw_payload:info:event:stage::varchar), '')) as event_stage,
+        raw_payload:info:players as player_roster,
         try_to_date(raw_payload:info:dates[0]::varchar) as match_date,
         nullif(trim(raw_payload:info:venue::varchar), '') as venue,
         {{ standardize_team("raw_payload:info:teams[0]::varchar") }} as team_1,

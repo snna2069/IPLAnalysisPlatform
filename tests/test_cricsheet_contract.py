@@ -164,7 +164,7 @@ def test_team_page_does_not_join_dim_match() -> None:
     """F-04: joining DIM_MATCH to FACT_MATCHES made every shared column ambiguous."""
     page = TEAM_PAGE.read_text(encoding="utf-8")
     assert "DIM_MATCH" not in page
-    assert "f.team_1 as team_name" in page
+    assert "BRIDGE_MATCH_TEAM" in page
 
 
 # --------------------------------------------------------------------------

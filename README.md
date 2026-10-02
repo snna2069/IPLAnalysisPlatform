@@ -189,6 +189,24 @@ Phase 8 is documented in [terraform/README.md](terraform/README.md). The default
 
 ## Verification Status
 
+### Analytics correctness
+
+- Player performance excludes super overs. Balls faced exclude wides but include
+  no-balls; legal bowling balls exclude both. Bowler runs exclude byes, leg-byes,
+  and penalties; wickets include only bowler-attributable dismissals.
+- Delivery facts retain super overs for drill-down. Regular-innings totals must
+  explicitly filter `is_super_over = false`. Boundary counts honor `runs.non_boundary`.
+- `bridge_match_team` owns match participation and resolved wins, including
+  super-over deciders. Win percentage uses all fixtures, including no-results.
+- `bridge_player_match_team` uses the latest match roster for player representation.
+  The Player page team filter means representing that team, not playing against it.
+- `fact_season_results` uses only `info.event.stage = final`. A missing, ambiguous,
+  or unresolved final leaves the champion null. Sidebar filters never redefine a
+  season's champion; no champion is inferred from most wins or the latest match.
+
+These corrections have local regression coverage; Snowflake execution and a live
+UI run against populated marts remain necessary before claiming end-to-end correctness.
+
 | Area | Status | Verification boundary |
 |---|---|---|
 | Python ingestion and raw validation | Implemented and unit-tested | `pytest` passes; tests use local fixtures and do not call external sources. |
@@ -203,8 +221,7 @@ The project is therefore linked in code, but it is not honestly claimable as a v
 
 ## Future Improvements
 
-- Add a dbt-owned match-team bridge for cleaner team win and head-to-head filtering.
-- Add official tournament champion metadata instead of inferring champions from match winners.
+- Add an official tournament champion dataset to fill seasons without an explicitly marked final.
 - Add CI checks for Python, dbt parse, Terraform validation, and DAG import.
 - Add remote Terraform state with encryption and locking for a shared deployment.
 - Add observability metrics for source freshness, row counts, and pipeline duration.

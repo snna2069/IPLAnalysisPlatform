@@ -24,31 +24,31 @@ if venue != "All":
 if team != "All":
     conditions.append("(f.team_1 = %s or f.team_2 = %s)")
     params.extend([team, team])
+if filters["player"] != "All":
+    conditions.append("exists (select 1 from IPL_ANALYTICS.ANALYTICS.BRIDGE_PLAYER_MATCH_TEAM r where r.match_key = f.match_key and r.player_name = %s)")
+    params.append(filters["player"])
 where = " AND ".join(conditions)
 
 try:
     team_stats = query(
         f"""
         with participation as (
-            select f.team_1 as team_name, f.match_key, f.winner_key, f.team_1_key as team_key
+            select b.team_name, b.match_key, b.is_win
             from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES f
-            where {where}
-            union all
-            select f.team_2, f.match_key, f.winner_key, f.team_2_key
-            from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES f
+            join IPL_ANALYTICS.ANALYTICS.BRIDGE_MATCH_TEAM b using (match_key)
             where {where}
         )
          select team_name, matches_played, wins,
              round(100 * wins / nullif(matches_played, 0), 1) as win_percentage
          from (
              select team_name, count(distinct match_key) as matches_played,
-                 count_if(winner_key = team_key) as wins
+                 sum(is_win) as wins
              from participation
              group by team_name
          ) stats
          order by wins desc
         """,
-        tuple(params + params),
+        tuple(params),
     )
     if team_stats.empty:
         st.info("No team results match the selected filters.")
@@ -72,16 +72,18 @@ try:
         selected_team = st.selectbox("Choose a team", ["All", *team_stats["TEAM_NAME"].tolist()])
         if selected_team != "All":
             h2h = query(
-                """
-                select case when team_1 = %s then team_2 else team_1 end as opponent,
+                f"""
+                select b.opponent,
                        count(*) as matches,
-                       count_if(winner = %s) as team_wins
-                from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES
-                where (team_1 = %s or team_2 = %s)
-                group by opponent order by team_wins desc
+                       sum(b.is_win) as team_wins
+                from IPL_ANALYTICS.ANALYTICS.BRIDGE_MATCH_TEAM b
+                join IPL_ANALYTICS.ANALYTICS.FACT_MATCHES f using (match_key)
+                where {where} and b.team_name = %s
+                group by b.opponent order by team_wins desc
                 """,
-                (selected_team, selected_team, selected_team, selected_team),
+                (*params, selected_team),
             )
             st.dataframe(h2h, use_container_width=True, hide_index=True)
+        st.caption("Wins include super-over deciders. Win percentage uses all matches played, including ties and no-results. Head-to-head respects the same sidebar filters.")
 except Exception as exc:
     st.error(f"Team analysis could not load: {exc}")

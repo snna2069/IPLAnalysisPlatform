@@ -22,9 +22,18 @@ if filters["venue"] != "All":
     match_conditions.append("m.venue = %s")
     match_params.append(filters["venue"])
 if filters["player"] != "All":
-    match_conditions.append("exists (select 1 from IPL_ANALYTICS.ANALYTICS.FACT_PLAYER_PERFORMANCE fp where fp.match_key = m.match_key and fp.player_name = %s)")
+    match_conditions.append("exists (select 1 from IPL_ANALYTICS.ANALYTICS.BRIDGE_PLAYER_MATCH_TEAM r where r.match_key = m.match_key and r.player_name = %s)")
     match_params.append(filters["player"])
 match_where = " and ".join(match_conditions)
+performance_conditions = list(match_conditions)
+performance_params = list(match_params)
+if filters["player"] != "All":
+    performance_conditions.append("p.player_name = %s")
+    performance_params.append(filters["player"])
+if filters["team"] != "All":
+    performance_conditions.append("exists (select 1 from IPL_ANALYTICS.ANALYTICS.BRIDGE_PLAYER_MATCH_TEAM r where r.match_key = p.match_key and r.player_key = p.player_key and r.team_name = %s)")
+    performance_params.append(filters["team"])
+performance_where = " and ".join(performance_conditions)
 
 try:
     trends = query(
@@ -32,7 +41,8 @@ try:
         select m.season, count(distinct m.match_key) as matches,
                sum(d.total_runs) as runs, sum(d.is_wicket) as wickets
         from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES m
-        left join IPL_ANALYTICS.ANALYTICS.FACT_DELIVERIES d using (match_key)
+        left join IPL_ANALYTICS.ANALYTICS.FACT_DELIVERIES d
+          on m.match_key = d.match_key and not d.is_super_over
         where {match_where}
         group by m.season order by try_to_number(m.season)
         """,
@@ -40,32 +50,35 @@ try:
     )
     champions = query(
         f"""
-        select season, winner as champion, count(*) as title_evidence
-        from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES m
-        where winner is not null
-          and {match_where}
-        group by season, winner
-        qualify row_number() over (partition by season order by title_evidence desc) = 1
-        order by try_to_number(season) desc
+        select c.season, c.champion, c.final_match_id
+        from IPL_ANALYTICS.ANALYTICS.FACT_SEASON_RESULTS c
+        where c.season in (
+            select distinct m.season from IPL_ANALYTICS.ANALYTICS.FACT_MATCHES m
+            where {match_where}
+        )
+        order by c.season desc
         """,
         tuple(match_params),
     )
     performers = query(
         f"""
-        select m.season, p.player_name,
+        select p.player_name,
                sum(p.runs_scored) as runs, sum(p.wickets) as wickets
         from IPL_ANALYTICS.ANALYTICS.FACT_PLAYER_PERFORMANCE p
         join IPL_ANALYTICS.ANALYTICS.DIM_MATCH m using (match_key)
-        where {match_where}
-        group by m.season, p.player_name
+        where {performance_where}
+        group by p.player_name
         """,
-        tuple(match_params),
+        tuple(performance_params),
     )
     if trends.empty:
         st.info("No season data matches the selected filter.")
     else:
         kpi = st.columns(3)
-        champion = champions.iloc[0]["CHAMPION"] if not champions.empty else "Not available"
+        champion = "Select one season"
+        if filters["season"] != "All":
+            known_champions = champions["CHAMPION"].dropna()
+            champion = known_champions.iloc[0] if not known_champions.empty else "Not available"
         top_runs = performers.sort_values("RUNS", ascending=False).iloc[0]["PLAYER_NAME"] if not performers.empty else "Not available"
         top_wickets = performers.sort_values("WICKETS", ascending=False).iloc[0]["PLAYER_NAME"] if not performers.empty else "Not available"
         kpi[0].metric("Champion", champion)
@@ -82,6 +95,6 @@ try:
         st.dataframe(trends, use_container_width=True, hide_index=True)
         st.subheader("Champion record")
         st.dataframe(champions, use_container_width=True, hide_index=True)
-        st.caption("Champion is inferred from the winner recorded in match facts. Confirm the official final result when extending the mart with tournament metadata.")
+        st.caption("Champions come only from a unique fixture explicitly marked as the season final. Missing, ambiguous, or unresolved finals have no champion. Team, venue, and player filters select seasons in view, not a different champion. Runs, wickets, and player totals exclude super overs.")
 except Exception as exc:
     st.error(f"Season analysis could not load: {exc}")
